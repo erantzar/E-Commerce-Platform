@@ -26,7 +26,7 @@ This is the backend server for our Full Stack final project. It handles user aut
 3. Set up your `.env` file.
 
 4. cd E-Commerce-Platform 
-    * make shure all the git commands (new branches, commits..) are on the main file
+    * make sure all the git commands (new branches, commits..) are on the main file
     * so if we update the readme.md or the .gitignore it will be commited
     * and also, for later when we build the forntEnd and add more files  
 
