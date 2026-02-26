@@ -18,6 +18,17 @@ This is the backend server for our Full Stack final project. It handles user aut
 
 ## 🚀 Getting Started
 
+1. Clone the repo.
+    * git clone https://github.com/erantzar/E-Commerce-Platform.git
+
+2. Run `pnpm install`.
+
+3. Set up your `.env` file.
+
+4. cd E-Commerce-Platform 
+    * make shure all the git commands (new branches, commits..) are on the main file
+    * so if we update the readme.md or the .gitignore it will be commited
+    * and also, for later when we build the forntEnd and add more files  
 
 
 
