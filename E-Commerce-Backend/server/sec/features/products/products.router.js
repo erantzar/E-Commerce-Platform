@@ -7,17 +7,18 @@ import {
     updateProduct,
     deleteProduct
 } from "./products.controller.js";
-
-import express from 'express'
+import express from 'express';
+import { validate } from "../../../shared/middleware/validate.js";
+import { createProductSchema, updateProductSchema, ratinigSchema } from "./products.schemas.js";
 
 const router = express.Router();
 
-router.post('/', createProduct);
-router.post('/:id/rating', addProductRating);
+router.post('/', validate(createProductSchema),createProduct);
+router.post('/:id/rating',validate(ratinigSchema),addProductRating);
 router.get('/', getAllProducts)
 router.get('/category/:category', getProductByCategory)
 router.get('/:id', getProductById)
-router.put('/:id', updateProduct)
+router.put('/:id', validate(updateProductSchema) ,updateProduct)
 router.delete('/:id', deleteProduct)
 
 export default router
