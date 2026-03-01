@@ -1,6 +1,7 @@
 import express from "express";
 import connectDB from "./sec/config/db.js";
-import "dotenv/config"; // טוען משתני סביבה
+import "dotenv/config"; 
+import {router} from './sec/features/users/user.router.js'// טוען משתני סביבה
 
 const app = express();
 
@@ -22,6 +23,7 @@ const start = async () => {
     app.listen(PORT, () => 
       console.log(`Server running on port ${PORT}`)
     );
+    app.use("/api/v1/users", router);
 
   } catch (error) {
     console.error("Server failed to start:", error.message);
