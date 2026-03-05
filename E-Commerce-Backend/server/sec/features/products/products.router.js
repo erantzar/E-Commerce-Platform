@@ -11,6 +11,7 @@ import express from 'express';
 import { validate } from "../../../shared/middleware/validate.js";
 import { createProductSchema, updateProductSchema, ratinigSchema } from "./products.schemas.js";
 
+
 const router = express.Router();
 
 router.post('/', validate(createProductSchema),createProduct);

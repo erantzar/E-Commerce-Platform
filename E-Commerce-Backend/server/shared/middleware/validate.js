@@ -1,4 +1,6 @@
 import AppError from "../utils/appError.js";
+
+
 export const validate = (schema) => (req, res, next) => {
     const { error, value } = schema.validate(req.body, {
       abortEarly: false  // return ALL errors at once, not just the first one

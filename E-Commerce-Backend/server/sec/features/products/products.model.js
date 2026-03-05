@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-
+//להוסיף אובייקט לתמונה imagePublicId
 // סכמה פנימית לדירוגים (RatingSchema)
 const ratingSchema = new mongoose.Schema({
     user: {

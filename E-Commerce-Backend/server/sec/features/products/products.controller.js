@@ -9,6 +9,7 @@ import AppError from '../../../shared/utils/appError.js';
  */
 
 export const createProduct = catchAsync(async (req, res, next) => {
+
     const newProduct = await Product.create(req.body);
 
 
