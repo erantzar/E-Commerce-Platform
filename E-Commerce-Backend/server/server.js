@@ -1,12 +1,28 @@
 import express from "express";
 import connectDB from "./sec/config/db.js";
 import "dotenv/config"; 
-import {router} from './sec/features/users/user.router.js'// טוען משתני סביבה
+import router from './sec/features/users/user.router.js'
+import AuthRoutes from './sec/features/auth/auth.router.js'// טוען משתני סביבה
+import rateLimit from 'express-rate-limit'
 
 const app = express();
 
 app.use(express.json());
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 דקות
+  limit:100,// מקסימום 100 בקשות
+  standardHeaders:true,
+  legacyHeaders:false,
+  message:"יותר מידי בקשות חקה 15 דקות"
+
+});
+// we add this when using rate limit behind proxy
+app.set("trust proxy", 1)
+app.use(limiter);
+
+app.use("/api/v1/users", router);
+app.use("/api/v1/AuthRoutes", AuthRoutes);
 
 app.use((_, res) => {
   console.log("404 - Not Found");
@@ -23,7 +39,6 @@ const start = async () => {
     app.listen(PORT, () => 
       console.log(`Server running on port ${PORT}`)
     );
-    app.use("/api/v1/users", router);
 
   } catch (error) {
     console.error("Server failed to start:", error.message);

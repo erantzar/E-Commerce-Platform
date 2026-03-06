@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 8,
-    select: false
+    select: true
   },
 
   // הרשאות
@@ -54,14 +54,7 @@ const userSchema = new mongoose.Schema({
 
   // כתובות (פשוט כ-array של אובייקטים)
   addresses: {
-    type: [
-      {
-        city: String,
-        street: String,
-        houseNumber: Number,
-        zip: String
-      }
-    ],
+    type: [],
     default: []
   },
 
@@ -85,10 +78,11 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 /* הצפנת סיסמה לפני שמירה */
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
+// ב-user.model.js
+// userSchema.pre("save", async function (next) { // הוספתי next
+//   if (!this.isModified("password")) return next();
+//   this.password = await bcrypt.hash(this.password, 10);
+//   next();
+// });
 
 export default mongoose.model("User", userSchema);

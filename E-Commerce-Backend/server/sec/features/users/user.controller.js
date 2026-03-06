@@ -2,6 +2,7 @@
 import User from "./user.model.js";
 import bcrypt from "bcryptjs";
 
+
 // ============================
 // 👤 Regular users
 // ============================
@@ -103,31 +104,39 @@ export const changePassword = async (req, res) => {
 // 🏠 Addresses
 // ============================
 
-export const  updateAddress = async (req, res) => {
+export const updateAddress = async (req, res) => {
   try {
     const userId = req.user.id; // מגיע מה-authMiddleware
-    const user = await User.findById(userId).select("-password");
+    const { addrId } = req.params; // ה-ID של הכתובת שרוצים לעדכן
+    const updateData = req.body; // הנתונים החדשים (למשל city, street וכו')
+
+    // עדכון הכתובת הספציפית בתוך מערך הכתובות
+    // אנחנו מחפשים משתמש שה-ID שלו תואם ושיש לו כתובת עם ה-ID המבוקש
+    const user = await User.findOneAndUpdate(
+      { _id: userId, "addresses._id": addrId }, 
+      {
+        $set: {
+          // ה-$ אומר ל-Mongoose לעדכן בדיוק את האיבר במערך שנמצא בחיפוש
+          "addresses.$": { ...updateData, _id: addrId } 
+        }
+      },
+      { new: true } // מחזיר את המשתמש המעודכן
+    ).select("-password");
+
     if (!user) {
       return res.status(404).json({
         status: 404,
-        message: "User not found",
+        message: "User or Address not found",
         data: null,
       });
     }
 
-    // לוקחים את הנתונים מה-body (זה ה"פרוק מבנים")
-    const { city, street, houseNumber, zip } = req.body;
-    if(city)user.addresses[0].city = city
-    if(street)user.addresses[0].street = street
-    if(houseNumber)user.addresses[0].houseNumber = houseNumber
-    if(zip)user.addresses[0].zip = zip
-    await user.save();
-
-    return res.status(201).json({
-      status: 201,
-      message: "Address added successfully",
+    return res.status(200).json({
+      status: 200,
+      message: "Address updated successfully",
       data: user.addresses,
     });
+
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -137,7 +146,7 @@ export const  updateAddress = async (req, res) => {
     });
   }
 };
-
+ 
 export const address = async (req, res) => {
   try {
     const userId = req.user.id; // מגיע מה-authMiddleware
@@ -151,9 +160,9 @@ export const address = async (req, res) => {
     }
 
     // לוקחים את הנתונים מה-body (זה ה"פרוק מבנים")
-    const { city, street, houseNumber, zip } = req.body;
+    const { addresses } = req.body;
 
-    user.addresses.push({ city, street, houseNumber, zip });
+    user.addresses.push({ addresses });
     await user.save();
 
     return res.status(201).json({
@@ -225,8 +234,8 @@ export const deleteAddress = async (req, res) => {
 // קבלת כל המשתמשים
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
 
+    const users = await User.find().select("-password");         
     return res.status(200).json({
       status: 200,
       message: "Users fetched successfully",
@@ -245,14 +254,13 @@ export const getAllUsers = async (req, res) => {
 export const updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const { role } = req.body;
 
     const user = await User.findById(id);
     if (!user) {
       throw new Error("User not found");
     }
 
-    user.role = role;
+    user.role = "admin";
     await user.save();
 
     return res.status(200).json({
