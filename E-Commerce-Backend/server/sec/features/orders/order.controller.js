@@ -1,0 +1,203 @@
+import { catchAsync } from "../../../shared/middleware/catchAsync.js";
+import AppError from "../../../shared/utils/appError.js";
+import Product from "../products/products.model.js";
+import Order from "./order.model.js";
+
+/**
+ * @desc    Create a new Order
+ * @route   POST http://localhost:3000/orders/
+ * @access  Confrimed User
+ */
+export const createOrder = catchAsync(async (req, res, next) => {
+  const { items, user, shippingAddress, paymentMethod, notes, shipingCost } = req.body;
+
+  if (!items || items.length === 0) {
+    return next(new AppError('An order must contain at least one item.', 400));
+  }
+
+  const stockUpdates = [];
+  const resolvedItems = [];
+  let totalPrice = 0;
+
+  for (const orderItem of items) {
+    const product = await Product.findById(orderItem.product).select('stock price name image');
+
+    if (!product) {
+      return next(new AppError(`Product with ID ${orderItem.product} was not found.`, 404));
+    }
+
+    if (orderItem.quantity > product.stock) {
+      return next(
+        new AppError(
+          `Insufficient stock for product "${product.name}". ` +
+          `Requested: ${orderItem.quantity}, Available: ${product.stock}.`,
+          400
+        )
+      );
+    }
+
+    totalPrice += orderItem.quantity * product.price;
+    stockUpdates.push({ product, quantity: orderItem.quantity });
+
+
+    resolvedItems.push({
+      product: product._id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      quantity: orderItem.quantity,
+    });
+  }
+
+  for (const { product, quantity } of stockUpdates) {
+    product.stock -= quantity;
+    await product.save();
+  }
+
+  const order = await Order.create({
+    user,
+    items: resolvedItems,
+    shippingAddress,
+    paymentMethod,
+    notes,
+    totalprice: (totalPrice + shipingCost),
+  });
+
+  res.status(201).json({
+    status: 'success',
+    data: order,
+  });
+});
+
+/**
+ * @desc    Get my orders by Id
+ * @route   GET http://localhost:3000/orders/my-orders/:id
+ * @access  Confrimed User
+ */
+export const myOrders = catchAsync(async (req, res, next) => {
+  const id = req.params.id; // replace with req.user._id once auth is ready
+
+  const orders = await Order.find({ user: id });
+
+  if (orders.length === 0) {
+    return next(new AppError(`No orders found for user with ID: ${id}`, 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    results: orders.length,
+    data: orders,
+  });
+});
+
+/**
+ * @desc    Get single orders by Id
+ * @route   Get http://localhost:3000/orders/:id
+ * @access  Confrimed User/ Admin
+ */
+
+export const singelOrderById = catchAsync(async (req, res, next) => {
+  const id = req.params.id;
+
+  const order = await Order.findById(id);
+
+  if (!order) {
+    return next(new AppError(`No order found with ID: ${id}`, 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: order,
+  });
+});
+
+/**
+ * @desc    Get all orders
+ * @route   Get http://localhost:3000/orders
+ * @access  Admin
+ */
+export const getAllOrders = catchAsync(async (req, res, next) => {
+  const {
+    page = 1,
+    limit = 10,
+  } = req.query
+
+
+  // ── 3. PAGINATION ───────────────────────────────────────────────
+  const pageNum = Math.max(1, Number(page));
+  const limitNum = Math.min(50, Math.max(1, Number(limit))); // max 50 per page
+  const skip = (pageNum - 1) * limitNum;
+
+  const order = await Order.find()
+    .sort({ createdAt: -1 })//newst first
+    .skip(skip)
+    .limit(limitNum)
+
+  if (order.length === 0) {
+    return next(new AppError(`No orders found`, 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: order,
+  });
+});
+
+/**
+ * @desc    Get single orders by Id
+ * @route   Get http://localhost:3000/orders/:id/status
+ * @access  Confrimed User/ Admin
+ */
+export const updateStatus = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const { orderStatus } = req.body;
+
+  const order = await Order.findByIdAndUpdate(
+    id,
+    { orderStatus },
+    {new: true, runValidators: true}
+  );
+
+  if (!order) {
+    return next(new AppError(`No orders found with ID: ${id}`, 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: order,
+  });
+});
+
+/**
+ * @desc    Get single orders by Id
+ * @route   Get http://localhost:3000/orders/:id/cancel
+ * @access  Confrimed User/ Admin
+ */
+export const cancelOrder = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  // finds the order ONLY if it exists AND is still pending
+  const order = await Order.findOneAndUpdate(
+    { _id: id, orderStatus: 'pending' },
+    { orderStatus: 'cancelled' },
+    { new: true, runValidators: true }
+  );
+
+  if (!order) {
+    // either the order doesn't exist, or it's not in pending status
+    const exists = await Order.exists({ _id: id });
+    return next(new AppError(
+      exists
+        ? `Order ${id} cannot be cancelled because it is no longer pending.`
+        : `No order found with ID: ${id}`,
+      exists ? 400 : 404
+    ));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: order,
+  });
+});
+
+
