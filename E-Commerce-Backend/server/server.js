@@ -23,6 +23,8 @@ app.use(limiter);
 
 app.use("/api/v1/users", router);
 app.use("/api/v1/AuthRoutes", AuthRoutes);
+app.use("/api/v1/products", AuthRoutes);
+app.use("/api/v1/orders", AuthRoutes);
 
 app.use((_, res) => {
   console.log("404 - Not Found");

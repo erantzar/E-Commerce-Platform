@@ -13,7 +13,6 @@ import crypto from "crypto";
 
 
 export const register = async (req, res) => {
-    console.log("עובד");
     
     try {
         const { name, email, password } = req.body
@@ -31,12 +30,10 @@ export const register = async (req, res) => {
             verificationToken: rawToken,
             password: hashed
         })
-        if(!user){console.log("לא עובדדדד");
-        }
-
+        
         const link = `http://localhost:3000/verify-email/${rawToken}`;
 
-        await linkAndEmail(email, link)
+        await sendVerificationEmail(email, link)
 
         res.status(200).json({
             status: 200,
@@ -49,8 +46,8 @@ export const register = async (req, res) => {
         if (String(code) === "11000") {
             const { email } = keyValue
             if (email) {
-                return res.status(1100).json({
-                    status: 1100,
+                return res.status(400).json({
+                    status: 400,
                     message: "Cannot register with this email",
                     data: null
                 })

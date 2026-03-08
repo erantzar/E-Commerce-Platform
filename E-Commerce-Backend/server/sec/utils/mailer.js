@@ -27,9 +27,9 @@ async function linkAndEmail(to, link) {
     await transporter.sendMail({
         from: `"My App" <${process.env.EMAIL_USER}>`,
         to: to,
-        subject: "שחחנו סיסמה",
-        text: `ForgotPassword: ${link}`,
-        html: `<h2>ForgotPassword</h2>
+        subject: "Forgot Password",
+        text: `Forgot Password: ${link}`,
+        html: `<h2>Forgot Password</h2>
            <h1>${link}</h1>`,
     });
 }
