@@ -6,7 +6,6 @@ dotenv.config()
 
 export const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    console.log(authHeader)
 
     if (!authHeader || !authHeader.startsWith("Bearer")) {
         return res.status(401).json({
@@ -17,13 +16,12 @@ export const authMiddleware = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1]
-    // console.log(token)
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        // Decoded - includes the user unique key of the token registration
+        
+        
         req.user = {
-            // ...req.user,
-            id: decoded.userId
+            ...decoded//userId,email
         }
         next()
     } catch (error) {
@@ -49,7 +47,7 @@ export const checkPermissions = async (req, res, next) => {
     next();
 }
 export const checkRole = async (req, res, next) => {
-    const user = await User.findById(req.user.id).select("role");
+    const user = await User.findById(req.user.userId).select("role");
     const { role } = user;
 
     if (role !== "admin") {

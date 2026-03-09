@@ -1,8 +1,10 @@
 import express from "express";
 import connectDB from "./sec/config/db.js";
 import "dotenv/config"; 
-import router from './sec/features/users/user.router.js'
-import AuthRoutes from './sec/features/auth/auth.router.js'// טוען משתני סביבה
+import router from './sec/features/users/user.router.js'// טוען משתני סביבה
+import AuthRoutes from './sec/features/auth/auth.router.js'
+import ProductsRoutes from './sec/features/products/products.router.js'
+import OrderRoutes from './sec/features/orders/order.router.js'
 import rateLimit from 'express-rate-limit'
 
 const app = express();
@@ -23,8 +25,8 @@ app.use(limiter);
 
 app.use("/api/v1/users", router);
 app.use("/api/v1/AuthRoutes", AuthRoutes);
-app.use("/api/v1/products", AuthRoutes);
-app.use("/api/v1/orders", AuthRoutes);
+app.use("/api/v1/products", ProductsRoutes);
+app.use("/api/v1/orders", OrderRoutes);
 
 app.use((_, res) => {
   console.log("404 - Not Found");
