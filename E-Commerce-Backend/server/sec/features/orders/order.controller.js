@@ -1,6 +1,7 @@
 import { catchAsync } from "../../../shared/middleware/catchAsync.js";
 import AppError from "../../../shared/utils/appError.js";
 import Product from "../products/products.model.js";
+import User from '../users/user.model.js'
 import Order from "./order.model.js";
 
 /**
@@ -9,8 +10,10 @@ import Order from "./order.model.js";
  * @access  Confrimed User
  */
 export const createOrder = catchAsync(async (req, res, next) => {
-  const { items, user, shippingAddress, paymentMethod, notes, shipingCost } = req.body;
-
+  const { items, shippingAddress, paymentMethod, notes, shipingCost } = req.body;
+  const user = req.user.userId
+  
+  
   if (!items || items.length === 0) {
     return next(new AppError('An order must contain at least one item.', 400));
   }
@@ -75,7 +78,7 @@ export const createOrder = catchAsync(async (req, res, next) => {
  * @access  Confrimed User
  */
 export const myOrders = catchAsync(async (req, res, next) => {
-  const id = req.params.id; // replace with req.user._id once auth is ready
+  const id = req.user.userId; 
 
   const orders = await Order.find({ user: id });
 
@@ -98,6 +101,7 @@ export const myOrders = catchAsync(async (req, res, next) => {
 
 export const singelOrderById = catchAsync(async (req, res, next) => {
   const id = req.params.id;
+  const userId = req.user.userId
 
   const order = await Order.findById(id);
 
@@ -105,10 +109,21 @@ export const singelOrderById = catchAsync(async (req, res, next) => {
     return next(new AppError(`No order found with ID: ${id}`, 404));
   }
 
-  res.status(200).json({
-    status: 'success',
-    data: order,
-  });
+  const orderUserId = order.user
+  const role = req.user.role
+  if(userId === orderUserId || role === "admin")//only if user is admin or if the order is attached to user 
+  {
+    return res.status(200).json({
+      status: 'success',
+      data: order,
+    });
+
+  }else{
+    return next(new AppError(`Unauthorized`, 403));
+
+  }
+
+
 });
 
 /**
@@ -144,9 +159,9 @@ export const getAllOrders = catchAsync(async (req, res, next) => {
 });
 
 /**
- * @desc    Get single orders by Id
- * @route   Get http://localhost:3000/orders/:id/status
- * @access  Confrimed User/ Admin
+ * @desc    update ststus of order by Id
+ * @route   Put http://localhost:3000/orders/:id/status
+ * @access  Admin
  */
 export const updateStatus = catchAsync(async (req, res, next) => {
   const { id } = req.params;
@@ -169,9 +184,9 @@ export const updateStatus = catchAsync(async (req, res, next) => {
 });
 
 /**
- * @desc    Get single orders by Id
- * @route   Get http://localhost:3000/orders/:id/cancel
- * @access  Confrimed User/ Admin
+ * @desc    cancel order
+ * @route   Put http://localhost:3000/orders/:id/cancel
+ * @access  Admin
  */
 export const cancelOrder = catchAsync(async (req, res, next) => {
   const { id } = req.params;

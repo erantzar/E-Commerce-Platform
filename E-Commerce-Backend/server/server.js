@@ -6,6 +6,7 @@ import AuthRoutes from './sec/features/auth/auth.router.js'
 import ProductsRoutes from './sec/features/products/products.router.js'
 import OrderRoutes from './sec/features/orders/order.router.js'
 import rateLimit from 'express-rate-limit'
+import {globalErrorHandler} from './shared/utils/errorConrtoller.js'
 
 const app = express();
 
@@ -32,6 +33,8 @@ app.use((_, res) => {
   console.log("404 - Not Found");
   res.status(404).json({ message: "Route not found" });
 });
+
+app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 3000;
 
