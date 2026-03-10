@@ -17,7 +17,7 @@ router.get('/', authMiddleware, checkRole, getAllOrders);
 
 router.put('/:id/status', validate(updateOrderStatusSchema), authMiddleware, checkRole, updateStatus);
 
-router.put('/:id/cancel', authMiddleware, cancelOrder);
+router.put('/:id/cancel', authMiddleware, checkRole, cancelOrder);
 
 
 export default router;

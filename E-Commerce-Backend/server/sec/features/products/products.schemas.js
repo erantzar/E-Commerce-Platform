@@ -20,11 +20,7 @@ export const updateProductSchema = Joi.object({
   }).min(1); // at least one field required on update
 
 export const ratinigSchema = Joi.object({
-  user: Joi.string()
-    .hex()
-    .length(24) //MongoDB ObjectIds are always 24 character hex strings
-    .required(),
-
+  
   rating: Joi.number()
     .min(1)
     .max(5)

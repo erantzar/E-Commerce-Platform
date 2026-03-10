@@ -10,6 +10,10 @@ import AppError from '../../../shared/utils/appError.js';
 
 export const createProduct = catchAsync(async (req, res, next) => {
 
+  // req.files is an array when using .array()
+  if (req.files && req.files.length > 0) {
+    req.body.images = req.files.map(file => file.path); //array of cloudinary URLs
+  }
     const newProduct = await Product.create(req.body);
 
 
@@ -136,7 +140,7 @@ export const getProductById = catchAsync(async(req,res,next) => {
 
 /**
  * @desc    Get all products by category
- * @route   GET http://localhost:3000/products/category/:category
+ * @route   GET http://localhost:3000/products/:category/category
  * @access  Public 
  */
 
@@ -162,7 +166,7 @@ export const getProductByCategory = catchAsync(async(req,res,next) => {
 
 /**
  * @desc    Create new rating for product by id
- * @route   GET http://localhost:3000/products/category/:category
+ * @route   GET http://localhost:3000/products/:id/rating
  * @access  Confrimed User
  */
 
@@ -180,7 +184,7 @@ export const addProductRating = catchAsync(async (req, res, next) => {
     const newRating = {
         rating: Number(rating),
         comment,
-        user: req.body.user // Temporarily taking user from body until Auth is ready
+        user: req.user.userId // Temporarily taking user from body until Auth is ready
     };
 
     product.ratings.push(newRating);
@@ -213,6 +217,10 @@ export const updateProduct = catchAsync(async (req, res, next) => {
     // Fields that should never be updated directly
     const forbiddenFields = ['sold', 'ratings', 'averageRating'];
     forbiddenFields.forEach(field => delete req.body[field]);
+
+    if (req.files && req.files.length > 0) {
+        req.body.images = req.files.map(file => file.path); //array of cloudinary URLs
+      }
   
     const product = await Product.findByIdAndUpdate(
       id,
