@@ -2,6 +2,7 @@ import { catchAsync } from "../../../shared/middleware/catchAsync.js";
 import AppError from "../../../shared/utils/appError.js";
 import Product from "../products/products.model.js";
 import User from '../users/user.model.js'
+import { sendOrderEmail } from "../../utils/mailer.js";
 import Order from "./order.model.js";
 
 /**
@@ -71,6 +72,8 @@ export const createOrder = catchAsync(async (req, res, next) => {
     notes,
     totalprice: (totalPrice + shipingCost),
   });
+
+  sendOrderEmail(order, req.user.email)
 
   res.status(201).json({
     status: 'success',
