@@ -81,7 +81,7 @@ export const changePassword = async (req, res) => {
     }
 
     // 3. עדכון הסיסמה (ה-Hashing יקרה ב-pre-save כפי שציינת)
-    user.password = newPassword;
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
     // 4. החזרת תשובה תקינה
