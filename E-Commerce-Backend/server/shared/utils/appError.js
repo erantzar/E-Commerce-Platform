@@ -2,7 +2,7 @@
 
 class AppError extends Error {
     constructor(message, statusCode) {
-        super(message); //build this 'AppError' class as standart Error object
+        super(message); 
         
         this.statusCode = statusCode;
         //if stsus error is 4xx (400/404/401/... ) its 'fail'  (client side), else 'error' (server side)

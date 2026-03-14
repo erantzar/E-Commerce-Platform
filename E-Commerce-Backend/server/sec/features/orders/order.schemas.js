@@ -8,7 +8,6 @@ const objectId = Joi.string()
 // ─── createOrderSchema ───────────────────────────────────────
 export const createOrderSchema = Joi.object({
 
-    user: objectId.required(),
 
     items: Joi.array()
         .items(

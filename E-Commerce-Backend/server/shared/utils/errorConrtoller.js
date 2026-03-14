@@ -3,29 +3,40 @@ import AppError from "./appError.js";
 
 // --- HELPER TRANSLATORS ---
 
-// 1. Handles "CastError" (Invalid IDs like /users/123)
+//Handles "CastError" (Invalid IDs like /users/123)
 const handleCastErrorDB = err => {
     const message = `Invalid ${err.path}: ${err.value}.`;
     return new AppError(message, 400);
 };
 
-// 2. Handles "Duplicate Fields" (Email already exists - 11000)
+//Handles "Duplicate Fields" (Email already exists - 11000)
 const handleDuplicateFieldsDB = err => {
     const value = Object.values(err.keyValue)[0];
     const message = `Duplicate field value: "${value}". Please use another value!`;
     return new AppError(message, 409); // 409 = Conflict
 };
 
-// 3. Handles "ValidationError" (Schema requirements not met)
+//Handles "ValidationError" (Schema requirements not met)
 const handleValidationErrorDB = err => {
     const errors = Object.values(err.errors).map(el => el.message);
     const message = `Invalid input data. ${errors.join('. ')}`;
     return new AppError(message, 400);
 };
 
-// 4. Handles JWT Errors (If you add authentication later)
+//Handles JWT Errors 
 const handleJWTError = () => new AppError('Invalid token. Please log in again!', 401);
 const handleJWTExpiredError = () => new AppError('Your token has expired! Please log in again.', 401);
+
+//Handles Multer Errors (when the file is too large)
+const handleMulterError = err => {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return new AppError('Image size must be less than 5MB.', 400);
+    }
+    return new AppError('File upload error.', 400);
+  };
+  
+
+
 
 // --- THE MAIN HANDLER ---
 
@@ -57,6 +68,7 @@ export const globalErrorHandler = (err, req, res, next) => {
     if (error.name === 'ValidationError') error = handleValidationErrorDB(error);
     if (error.name === 'JsonWebTokenError') error = handleJWTError();
     if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
+    if (error.name === 'MulterError') error = handleMulterError(error);
 
     // Send the response
     res.status(error.statusCode).json({

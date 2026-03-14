@@ -1,6 +1,8 @@
 import { catchAsync } from "../../../shared/middleware/catchAsync.js";
 import AppError from "../../../shared/utils/appError.js";
 import Product from "../products/products.model.js";
+import User from '../users/user.model.js'
+import { sendOrderEmail } from "../../utils/mailer.js";
 import Order from "./order.model.js";
 
 /**
@@ -9,8 +11,10 @@ import Order from "./order.model.js";
  * @access  Confrimed User
  */
 export const createOrder = catchAsync(async (req, res, next) => {
-  const { items, user, shippingAddress, paymentMethod, notes, shipingCost } = req.body;
-
+  const { items, shippingAddress, paymentMethod, notes, shipingCost } = req.body;
+  const user = req.user.userId
+  
+  
   if (!items || items.length === 0) {
     return next(new AppError('An order must contain at least one item.', 400));
   }
@@ -20,10 +24,15 @@ export const createOrder = catchAsync(async (req, res, next) => {
   let totalPrice = 0;
 
   for (const orderItem of items) {
-    const product = await Product.findById(orderItem.product).select('stock price name image');
+    const product = await Product.findById(orderItem.product).select('stock price name images isActive sold');
 
     if (!product) {
       return next(new AppError(`Product with ID ${orderItem.product} was not found.`, 404));
+    }
+    
+    
+    if(!product.isActive){
+      return next(new AppError(`product ${product.name} is unactive`, 404));
     }
 
     if (orderItem.quantity > product.stock) {
@@ -44,13 +53,14 @@ export const createOrder = catchAsync(async (req, res, next) => {
       product: product._id,
       name: product.name,
       price: product.price,
-      image: product.image,
+      image: product.images[0],
       quantity: orderItem.quantity,
     });
   }
 
   for (const { product, quantity } of stockUpdates) {
     product.stock -= quantity;
+    product.sold += quantity
     await product.save();
   }
 
@@ -62,6 +72,8 @@ export const createOrder = catchAsync(async (req, res, next) => {
     notes,
     totalprice: (totalPrice + shipingCost),
   });
+
+  sendOrderEmail(order, req.user.email)
 
   res.status(201).json({
     status: 'success',
@@ -75,7 +87,7 @@ export const createOrder = catchAsync(async (req, res, next) => {
  * @access  Confrimed User
  */
 export const myOrders = catchAsync(async (req, res, next) => {
-  const id = req.params.id; // replace with req.user._id once auth is ready
+  const id = req.user.userId; 
 
   const orders = await Order.find({ user: id });
 
@@ -98,6 +110,7 @@ export const myOrders = catchAsync(async (req, res, next) => {
 
 export const singelOrderById = catchAsync(async (req, res, next) => {
   const id = req.params.id;
+  const userId = req.user.userId
 
   const order = await Order.findById(id);
 
@@ -105,10 +118,21 @@ export const singelOrderById = catchAsync(async (req, res, next) => {
     return next(new AppError(`No order found with ID: ${id}`, 404));
   }
 
-  res.status(200).json({
-    status: 'success',
-    data: order,
-  });
+  const orderUserId = order.user
+  const role = req.user.role
+  if(userId === orderUserId || role === "admin")//only if user is admin or if the order is attached to user 
+  {
+    return res.status(200).json({
+      status: 'success',
+      data: order,
+    });
+
+  }else{
+    return next(new AppError(`Unauthorized`, 403));
+
+  }
+
+
 });
 
 /**
@@ -128,25 +152,40 @@ export const getAllOrders = catchAsync(async (req, res, next) => {
   const limitNum = Math.min(50, Math.max(1, Number(limit))); // max 50 per page
   const skip = (pageNum - 1) * limitNum;
 
-  const order = await Order.find()
-    .sort({ createdAt: -1 })//newst first
-    .skip(skip)
-    .limit(limitNum)
+  const [order, totalOrders] = await Promise.all([
+    
+     Order.find()
+      .sort({ createdAt: -1 })//newst first
+      .skip(skip)
+      .limit(limitNum),
+     Order.countDocuments()
+  ]);
 
   if (order.length === 0) {
     return next(new AppError(`No orders found`, 404));
   }
 
+  const totalPages = Math.ceil(totalOrders / limitNum);
+
   res.status(200).json({
     status: 'success',
+    results: order.length,
+            pagination: {
+                currentPage: pageNum,
+                totalPages,
+                totalOrders,
+                limit: limitNum,
+                hasNextPage: pageNum < totalPages,
+                hasPrevPage: pageNum > 1
+            },
     data: order,
   });
 });
 
 /**
- * @desc    Get single orders by Id
- * @route   Get http://localhost:3000/orders/:id/status
- * @access  Confrimed User/ Admin
+ * @desc    update ststus of order by Id
+ * @route   Put http://localhost:3000/orders/:id/status
+ * @access  Admin
  */
 export const updateStatus = catchAsync(async (req, res, next) => {
   const { id } = req.params;
@@ -169,9 +208,9 @@ export const updateStatus = catchAsync(async (req, res, next) => {
 });
 
 /**
- * @desc    Get single orders by Id
- * @route   Get http://localhost:3000/orders/:id/cancel
- * @access  Confrimed User/ Admin
+ * @desc    cancel order
+ * @route   Put http://localhost:3000/orders/:id/cancel
+ * @access  Admin
  */
 export const cancelOrder = catchAsync(async (req, res, next) => {
   const { id } = req.params;
