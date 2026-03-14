@@ -2,4 +2,3 @@ node_modules
 .env
 
 #its because im on Mac i have this secret folder to hide
-.DS_Store

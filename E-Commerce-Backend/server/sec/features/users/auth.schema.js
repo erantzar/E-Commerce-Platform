@@ -32,5 +32,8 @@ export const updateUserProfileinSchema = Joi.object({
     code: Joi.string().length(6).required()
   
   });
+  export const idValidation = Joi.object({
+    id: Joi.string().length(24).hex().required()
+  });
 
 

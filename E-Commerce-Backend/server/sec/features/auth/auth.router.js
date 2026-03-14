@@ -14,7 +14,17 @@ import {forgotPasswordSchema,
    registerSchema,
     resetPasswordSchema,
      verify2FASchema}
-      from './schemas/auth.schema.js'
+      from './auth.schema.js'
+      import rateLimit from "express-rate-limit";
+
+// הגדרת limiter
+const limiterLogIn = rateLimit({
+  windowMs: 60 * 1000, // 15 דקות
+  limit: 10,               // מקסימום 100 בקשות
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "יותר מידי בקשות, חכה 15 דקות"
+});
 
 const AuthRoutes = express.Router();
 
@@ -22,7 +32,7 @@ const AuthRoutes = express.Router();
 AuthRoutes.post('/register',validate(registerSchema), register);
 
 // התחברות משתמש רגיל
-AuthRoutes.post('/login',validate(loginSchema), login); // כאן לא צריך authMiddleware כי המשתמש עדיין לא מחובר
+AuthRoutes.post('/login',limiterLogIn,validate(loginSchema), login); // כאן לא צריך authMiddleware כי המשתמש עדיין לא מחובר
 
 // אימות מייל
 AuthRoutes.get('/verify-email/:rawToken', verifyEmail);
