@@ -2,8 +2,8 @@ import express from "express";
 import { authMiddleware, checkPermissions,checkRole } from "../auth/auth.middleware.js";
 import * as userController from "./user.controller.js";
 import {validate } from '../../utils/validate.js'
-import {changePasswordSchema, updateUserProfileinSchema}
-      from './schemas/auth.schema.js'
+import {changePasswordSchema, idValidation, updateUserProfileinSchema}
+      from './auth.schema.js'
 
 const router = express.Router();
 
@@ -36,10 +36,10 @@ router.delete("/addresses/:addrId", authMiddleware, userController.deleteAddress
 // קבלת כל המשתמשים
 router.get("/", authMiddleware, checkRole, userController.getAllUsers);
 // שינוי role
-router.put("/role/:id", authMiddleware,checkRole, userController.updateUserRole);
+router.put("/role/:id", authMiddleware,validate(idValidation),checkRole, userController.updateUserRole);
 
 // מחיקת משתמש
-router.delete("/:id", authMiddleware,checkRole, userController.deleteUser);
+router.delete("/:id", authMiddleware,validate(idValidation),checkRole, userController.deleteUser);
 
 
 export default router;

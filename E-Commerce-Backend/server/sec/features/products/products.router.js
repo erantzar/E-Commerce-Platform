@@ -14,23 +14,15 @@ import { createProductSchema, updateProductSchema, ratinigSchema } from "./produ
 import { uploadProductImage } from "../../config/cloudinary.js";
 
 
-const router = express.Router();
+const routerProduct = express.Router();
 
+routerProduct.post('/', validate(createProductSchema),createProduct);
+routerProduct.post('/:id/rating',validate(ratinigSchema),addProductRating);
+routerProduct.get('/', getAllProducts)
+routerProduct.get('/category/:category', getProductByCategory)
+routerProduct.get('/:id', getProductById)
+routerProduct.put('/:id', validate(updateProductSchema) ,updateProduct)
+routerProduct.delete('/:id', deleteProduct)
 
-
-router.get('/:id', getProductById)
-
-router.get('/:category/category', getProductByCategory)
-
-router.get('/', getAllProducts)
-
-router.post('/', validate(createProductSchema) ,authMiddleware, checkRole, uploadProductImage.array('images', 4), createProduct);
-
-router.put('/:id', validate(updateProductSchema),authMiddleware, checkRole, uploadProductImage.array('images', 4) ,updateProduct)
-
-router.delete('/:id',authMiddleware, checkRole, deleteProduct)
-
-router.post('/:id/rating',validate(ratinigSchema),authMiddleware, addProductRating);
-
-export default router
+export default routerProduct
 

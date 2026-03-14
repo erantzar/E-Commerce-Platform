@@ -15,11 +15,11 @@ export const createProduct = catchAsync(async (req, res, next) => {
     req.body.images = req.files.map(file => file.path); //array of cloudinary URLs
   }
     const newProduct = await Product.create(req.body);
-
+    console.log(newProduct._id);
 
     res.status(201).json({
         status: 'success',
-        data: newProduct
+        data: newProduct,
     });
 });
 

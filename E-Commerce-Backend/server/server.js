@@ -10,6 +10,7 @@ import {globalErrorHandler} from './shared/utils/errorConrtoller.js'
 import helmet from 'helmet';
 import cors from 'cors'
 import corsOptions from "./sec/config/cors.config.js";
+import cartRoutes from "./sec/features/Cart/cart.routes.js";
 
 const app = express();
 
@@ -29,7 +30,7 @@ app.use(
 );
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 דקות
+  windowMs: 60 * 1000, // 15 דקות
   limit:100,// מקסימום 100 בקשות
   standardHeaders:true,
   legacyHeaders:false,
@@ -44,6 +45,7 @@ app.use("/api/v1/users", router);
 app.use("/api/v1/AuthRoutes", AuthRoutes);
 app.use("/api/v1/products", ProductsRoutes);
 app.use("/api/v1/orders", OrderRoutes);
+app.use("/api/v1/cart",cartRoutes)
 
 app.use((_, res) => {
   console.log("404 - Not Found");
