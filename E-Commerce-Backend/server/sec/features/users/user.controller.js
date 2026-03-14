@@ -55,11 +55,10 @@ try {
 })
 }
 };
-//בעיה כטנה שאין לי מוסג איך ליפטור changePassword
 
 export const changePassword = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const {userId} = req.user;
     // 1. חילוץ הסיסמאות מגוף הבקשה
     const { oldPassword, newPassword } = req.body;
 
@@ -69,6 +68,8 @@ export const changePassword = async (req, res) => {
     }
 
     const user = await User.findById(userId).select("+password");
+    console.log(user.password);
+    
     if (!user) {
       return res.status(404).json({ status: 404, message: "User not found" });
     }
@@ -87,7 +88,7 @@ export const changePassword = async (req, res) => {
     res.status(200).json({
       status: 200,
       message: "Password updated successfully",
-      data: null // תוקן מ-nell
+      data: null
     });
 
   } catch (error) {

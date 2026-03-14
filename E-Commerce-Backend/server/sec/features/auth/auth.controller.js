@@ -206,8 +206,6 @@ export const resetPassword = async (req, res) => {
       resetPasswordExpiry: { $gt: Date.now() },
     });
  
-    console.log(user);
-
     if (!user) {
       return res.status(400).json({
         status: 400,
