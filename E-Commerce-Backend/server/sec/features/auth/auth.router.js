@@ -7,7 +7,8 @@ import {
   resetPassword, 
   adminLogin,
   verify2FA,
-  getMe
+  getMe,
+  logout
 } from './auth.controller.js';
 import {validate } from '../../utils/validate.js'
 import {forgotPasswordSchema,
@@ -52,9 +53,13 @@ AuthRoutes.post('/admin/login', validate(loginSchema),adminLogin);
 AuthRoutes.post('/admin/verify-2fa',validate(verify2FASchema), verify2FA);
 
 // התנתקות
-//AuthRoutes.post('/logout', authMiddleware, logout);
+AuthRoutes.post('/logout', authMiddleware, logout);
 
 // קבלת פרופיל עצמי
 AuthRoutes.get('/me', authMiddleware, getMe);
+
+//מחיקת הtoken
+AuthRoutes.put('/logout', authMiddleware, logout);
+
 
 export default AuthRoutes;

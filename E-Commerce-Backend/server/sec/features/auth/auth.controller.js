@@ -8,30 +8,30 @@ import crypto from "crypto";
 
 
 
- function generateCode() {
-     return Math.floor(100000 + Math.random() * 900000).toString();
- }
+function generateCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 
 export const register = async (req, res) => {
-    
+
     try {
         const { name, email, password } = req.body
         console.log(email);
-        
+
         const hashed = await bcrypt.hash(password, 10)
         console.log(hashed);
-        
+
         const rawToken = crypto.randomBytes(32).toString("hex");
         console.log(rawToken);
-        
+
         const user = await User.create({
             name,
             email,
             verificationToken: rawToken,
             password: hashed
         })
-        
+
         const link = `http://localhost:3000/verify-email/${rawToken}`;
 
         await sendVerificationEmail(email, link)
@@ -68,7 +68,7 @@ export async function verifyEmail(req, res) {
 
         const { rawToken } = req.params;
 
-        const user = await User.findOne({ verificationToken:rawToken });
+        const user = await User.findOne({ verificationToken: rawToken });
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -140,103 +140,103 @@ export const login = async (req, res) => {
 };
 
 export const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
+    try {
+        const { email } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) throw new Error("User not found");
+        const user = await User.findOne({ email });
+        if (!user) throw new Error("User not found");
 
-    // יוצרים טוקן רנדומלי
-    const rawToken = crypto.randomBytes(32).toString("hex");
+        // יוצרים טוקן רנדומלי
+        const rawToken = crypto.randomBytes(32).toString("hex");
 
-    // יוצרים hash לשמירה במסד
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(rawToken)
-      .digest("hex");
+        // יוצרים hash לשמירה במסד
+        const hashedToken = crypto
+            .createHash("sha256")
+            .update(rawToken)
+            .digest("hex");
 
-    // שומרים במסד
-    user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpiry = Date.now() + 1000 * 60 * 15; // 15 דקות
-    await user.save();
+        // שומרים במסד
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpiry = Date.now() + 1000 * 60 * 15; // 15 דקות
+        await user.save();
 
-    // שולחים למייל את הטוקן המקורי
-    const link = `http://localhost:3000/reset-password/${rawToken}`;
+        // שולחים למייל את הטוקן המקורי
+        const link = `http://localhost:3000/reset-password/${rawToken}`;
 
-    await linkAndEmail(email, link);
+        await linkAndEmail(email, link);
 
-    return res.status(200).json({
-      status: 200,
-      message: "Reset link sent successfully",
-      data: link,
-    });
+        return res.status(200).json({
+            status: 200,
+            message: "Reset link sent successfully",
+            data: link,
+        });
 
-  } catch (error) {
-    return res.status(500).json({
-      status: 500,
-      message: error.message,
-      data: null,
-    });
-  }
+    } catch (error) {
+        return res.status(500).json({
+            status: 500,
+            message: error.message,
+            data: null,
+        });
+    }
 };
 
 
 export const resetPassword = async (req, res) => {
-  try {
-    const { token } = req.params;
-    const { password } = req.body;
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
 
-    if (!password) {
-      return res.status(400).json({
-        status: 400,
-        message: "Password is required",
-        data: null,
-      });
+        if (!password) {
+            return res.status(400).json({
+                status: 400,
+                message: "Password is required",
+                data: null,
+            });
+        }
+
+        // יוצרים hash לטוקן שהגיע מהלינק
+        const hashedToken = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        // מחפשים משתמש עם טוקן תקף
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpiry: { $gt: Date.now() },
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                status: 400,
+                message: "Token invalid or expired",
+                data: null,
+            });
+        }
+
+        // מצפינים סיסמה חדשה
+        const hashedPassword = await bcrypt.hash(password, 10);
+        user.password = hashedPassword;
+
+        // מוחקים את הטוקן
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+
+        await user.save();
+
+        return res.status(200).json({
+            status: 200,
+            message: "Password reset successfully",
+            data: null,
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: 500,
+            message: error.message,
+            data: null,
+        });
     }
-
-    // יוצרים hash לטוקן שהגיע מהלינק
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
-
-    // מחפשים משתמש עם טוקן תקף
-    const user = await User.findOne({
-      resetPasswordToken: hashedToken,
-      resetPasswordExpiry: { $gt: Date.now() },
-    });
- 
-    if (!user) {
-      return res.status(400).json({
-        status: 400,
-        message: "Token invalid or expired",
-        data: null,
-      });
-    }
-
-    // מצפינים סיסמה חדשה
-    const hashedPassword = await bcrypt.hash(password, 10);
-    user.password = hashedPassword;
-
-    // מוחקים את הטוקן
-    user.resetPasswordToken = null;
-    user.resetPasswordExpires = null;
-
-    await user.save();
-
-    return res.status(200).json({
-      status: 200,
-      message: "Password reset successfully",
-      data: null,
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      status: 500,
-      message: error.message,
-      data: null,
-    });
-  }
 };
 
 export const adminLogin = async (req, res) => {
@@ -363,22 +363,46 @@ export const verify2FA = async (req, res) => {
     }
 };
 export const getMe = async (req, res) => {
-        try{
-          const {userId} = req.user
-              const user = await User.findById(userId);
-          if (!user) throw new Error("User not found");
-          res.status(200).json({
+    try {
+        const { userId } = req.user
+        const user = await User.findById(userId);
+        if (!user) throw new Error("User not found");
+        res.status(200).json({
             status: 200,
             message: "User fetched successfully",
             data: user
         })
-        }catch(error){
-          console.log("User not found")
-          console.log(error);
-          res.status(400).json({
+    } catch (error) {
+        console.log("User not found")
+        console.log(error);
+        res.status(400).json({
             status: 400,
             message: error.message || error,
             data: null
         })
-        }
-      };
+    }
+};
+
+export const logout = async (req, res) => {
+
+    const {userId} = req.user
+    try {
+        const user = await User.findByIdAndUpdate({ _id: userId }, { verificationToken: null })
+
+        res.status(200).json({
+            status: 200,
+            message: "User logut successfully",
+            data: user
+        })
+    } catch (error) {
+        res.status(400).json({
+            status: 400,
+            message: error.message || error,
+            data: null
+        })
+    }
+
+    
+
+
+}
