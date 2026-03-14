@@ -6,7 +6,8 @@ import {
   forgotPassword, 
   resetPassword, 
   adminLogin,
-  verify2FA
+  verify2FA,
+  getMe
 } from './auth.controller.js';
 import {validate } from '../../utils/validate.js'
 import {forgotPasswordSchema,
@@ -16,6 +17,7 @@ import {forgotPasswordSchema,
      verify2FASchema}
       from './auth.schema.js'
       import rateLimit from "express-rate-limit";
+import { authMiddleware } from './auth.middleware.js';
 
 // הגדרת limiter
 const limiterLogIn = rateLimit({
@@ -53,6 +55,6 @@ AuthRoutes.post('/admin/verify-2fa',validate(verify2FASchema), verify2FA);
 //AuthRoutes.post('/logout', authMiddleware, logout);
 
 // קבלת פרופיל עצמי
-//AuthRoutes.get('/me', authMiddleware, getMe);
+AuthRoutes.get('/me', authMiddleware, getMe);
 
 export default AuthRoutes;

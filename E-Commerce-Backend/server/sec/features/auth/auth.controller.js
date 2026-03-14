@@ -364,8 +364,8 @@ export const verify2FA = async (req, res) => {
 };
 export const getMe = async (req, res) => {
         try{
-          const { id } = req.params
-              const user = await User.findById(id).select("+password");
+          const {userId} = req.user
+              const user = await User.findById(userId);
           if (!user) throw new Error("User not found");
           res.status(200).json({
             status: 200,
@@ -373,7 +373,7 @@ export const getMe = async (req, res) => {
             data: user
         })
         }catch(error){
-          console.log("User not found(getUserById)")
+          console.log("User not found")
           console.log(error);
           res.status(400).json({
             status: 400,
