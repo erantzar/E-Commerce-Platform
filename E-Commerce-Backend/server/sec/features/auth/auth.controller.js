@@ -276,7 +276,7 @@ export const adminLogin = async (req, res) => {
         user.twoFactorCode = twoFactorCode;
         user.twoFactorExpiry = twoFactorExpiry;
         await user.save();
-        await linkAndEmail(email, twoFactorCode);
+        await sendVerificationEmail(email, twoFactorCode);
         // שולחים את הקוד למייל או SMS
         // כאן אפשר להשתמש בפונקציה קיימת כמו sendVerificationEmail
         // sendVerificationEmail(user.email, `Your 2FA code is: ${twoFactorCode}`)

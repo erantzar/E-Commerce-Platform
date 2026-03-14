@@ -59,7 +59,9 @@ export const resetPasswordSchema = Joi.object({
 
 export const verify2FASchema = Joi.object({
 
-  code: Joi.string().length(6).required()
+  code: Joi.string().length(6).required(),
+  userId: Joi.string().length(24).hex().required()
+  
 
 });
 
