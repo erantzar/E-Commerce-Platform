@@ -12,15 +12,15 @@ import { validate } from "../../../shared/middleware/validate.js";
 import { createProductSchema, updateProductSchema, ratinigSchema } from "./products.schemas.js";
 
 
-const router = express.Router();
+const routerProduct = express.Router();
 
-router.post('/', validate(createProductSchema),createProduct);
-router.post('/:id/rating',validate(ratinigSchema),addProductRating);
-router.get('/', getAllProducts)
-router.get('/category/:category', getProductByCategory)
-router.get('/:id', getProductById)
-router.put('/:id', validate(updateProductSchema) ,updateProduct)
-router.delete('/:id', deleteProduct)
+routerProduct.post('/', validate(createProductSchema),createProduct);
+routerProduct.post('/:id/rating',validate(ratinigSchema),addProductRating);
+routerProduct.get('/', getAllProducts)
+routerProduct.get('/category/:category', getProductByCategory)
+routerProduct.get('/:id', getProductById)
+routerProduct.put('/:id', validate(updateProductSchema) ,updateProduct)
+routerProduct.delete('/:id', deleteProduct)
 
-export default router
+export default routerProduct
 

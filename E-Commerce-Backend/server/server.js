@@ -4,13 +4,15 @@ import "dotenv/config";
 import router from './sec/features/users/user.router.js'
 import AuthRoutes from './sec/features/auth/auth.router.js'// טוען משתני סביבה
 import rateLimit from 'express-rate-limit'
+import cartRoutes from "./sec/features/Cart/cart.routes.js";
+import routerProduct from "./sec/features/products/products.router.js";
 
 const app = express();
 
 app.use(express.json());
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 דקות
+  windowMs: 60 * 1000, // 15 דקות
   limit:100,// מקסימום 100 בקשות
   standardHeaders:true,
   legacyHeaders:false,
@@ -23,6 +25,8 @@ app.use(limiter);
 
 app.use("/api/v1/users", router);
 app.use("/api/v1/AuthRoutes", AuthRoutes);
+app.use("/api/v1/cart",cartRoutes)
+app.use("/api/v1/routerProduct",routerProduct)
 
 app.use((_, res) => {
   console.log("404 - Not Found");
