@@ -29,6 +29,10 @@ const userSchema = new mongoose.Schema({
     //select: true
   },
 
+  image: {
+    type: String
+  },
+
 
   // הרשאות
   role: {

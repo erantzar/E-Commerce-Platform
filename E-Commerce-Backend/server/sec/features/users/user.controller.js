@@ -1,4 +1,5 @@
 // user.service.js
+import cloudinary from "../../config/cloudinary.js";
 import User from "./user.model.js";
 import bcrypt from "bcryptjs";
 
@@ -30,23 +31,31 @@ export const getUserById = async (req,res) => {
 
 export const updateUserProfile = async (req,res) => {
 try {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const user = await User.findById(userId);
-  if (!user) throw new Error("User not found(updateUserProfile)");
-
+  if (!user) throw new Error("User not found");
   // עדכון שדות פרופיל (למשל שם ואימייל)
   const { name, email } = req.body;
   if (name) user.name = name;
   if (email) user.email = email;
 
-  await user.save();
+  if (req.file) {
+    // delete old image from Cloudinary if one exists
+    if (user.image) {
+      const publicId = user.image.split('/').slice(-2).join('/').split('.')[0]; // extracts "ecommerce/avatars/filename"
+      await cloudinary.uploader.destroy(publicId);
+    }
+
+    user.image = req.file.path;
+  }
+
+  await user.save({ validateBeforeSave: true });
   res.status(200).json({
     status: 200,
     message: " update User Profile successfully",
     data: user
 })
 } catch (error) {
-  console.log("User not found(updateUserProfile)")
   console.log(error);
   res.status(400).json({
     status: 400,

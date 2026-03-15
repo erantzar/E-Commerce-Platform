@@ -2,9 +2,8 @@ import express from "express";
 import { authMiddleware, checkPermissions,checkRole } from "../auth/auth.middleware.js";
 import * as userController from "./user.controller.js";
 import {validate } from '../../utils/validate.js'
-import {changePasswordSchema, idValidation, updateUserProfileinSchema}
-      from './auth.schema.js'
-
+import {changePasswordSchema, idValidation, updateUserProfileinSchema}from './auth.schema.js'
+import { uploadUserAvatar } from "../../config/cloudinary.js";
 const router = express.Router();
 
 /* =======================
@@ -12,10 +11,10 @@ const router = express.Router();
 ======================= */
 
 // קבלת פרופיל
-router.get("/profile", authMiddleware, userController.getUserById);
+router.get("/profile", authMiddleware ,userController.getUserById);
 
 // עדכון פרופיל
-router.put("/profile",validate(updateUserProfileinSchema), authMiddleware, userController.updateUserProfile);
+router.put("/profile",validate(updateUserProfileinSchema), authMiddleware,uploadUserAvatar.single('image') ,userController.updateUserProfile);
 // שינוי סיסמה
 router.put("/password-change",validate(changePasswordSchema), authMiddleware, userController.changePassword);
 

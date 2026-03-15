@@ -8,9 +8,7 @@ export const updateUserProfileinSchema = Joi.object({
     .email()
     .required(),
 
-  password: Joi.string()
-    .min(6)
-    .required()
+  name: Joi.string().min(2).required()
 
 });
 
