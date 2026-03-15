@@ -23,28 +23,30 @@ export const getCart = async (req, res) => {
     })
   }
 }
-export const postCart = async (req, res) => {
+export const addItemsToCart = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { product, quantity = 1 } = req.body;
+    const userId = req.user.userId;
+    const { productId, quantity = 1 } = req.body;
 
     const user = await User.findById(userId);
     if (!user) throw new Error("User not found");
 
-    const productExists = await Product.findById(product);
-    if (!productExists) throw new Error("Product not found");
-
-    const cartItem = user.cart.find(
-      item => item.product.toString() === product
+    const product = await Product.findById(productId);
+    if (!product) throw new Error("Product not found");
+    
+    console.log(user.cart)
+    
+    const cartItemIndex = user.cart.findIndex(
+      
+      item => {
+        return item.product.equals(productId)
+      }
     );
-
-    if (cartItem) {
-      cartItem.quantity += quantity;
+    
+    if (cartItemIndex !== -1) {
+      user.cart[cartItemIndex].quantity += quantity;
     } else {
-      user.cart.push({
-        product,
-        quantity
-      });
+      user.cart.push({ product: productId, quantity });
     }
 
     await user.save();

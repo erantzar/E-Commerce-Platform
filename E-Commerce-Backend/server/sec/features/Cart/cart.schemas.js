@@ -4,8 +4,8 @@ import Joi from "joi";
 
 export const postCartSchema = Joi.object({
 
-    product: Joi.string().length(24).hex().required(),
-    quantity:Joi.number().optional()
+    productId: Joi.string().length(24).hex().required(),
+    quantity: Joi.number().optional()
 });
 
 

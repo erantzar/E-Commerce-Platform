@@ -91,11 +91,13 @@ const userSchema = new mongoose.Schema({
       {
         product: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Product"
+          ref: "Product",
+          required: true
         },
         quantity: {
           type: Number,
-          min: 1
+          min: 1,
+          required: true
         }
       }
     ],
