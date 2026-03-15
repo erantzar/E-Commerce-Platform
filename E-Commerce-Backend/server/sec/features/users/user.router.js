@@ -1,5 +1,5 @@
 import express from "express";
-import { authMiddleware, checkPermissions,checkRole } from "../auth/auth.middleware.js";
+import { authMiddleware,checkRole } from "../auth/auth.middleware.js";
 import * as userController from "./user.controller.js";
 import {validate } from '../../utils/validate.js'
 import {changePasswordSchema, idValidation, updateUserProfileinSchema}from './auth.schema.js'
