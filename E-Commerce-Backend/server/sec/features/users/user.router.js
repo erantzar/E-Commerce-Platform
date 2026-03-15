@@ -19,7 +19,7 @@ router.put("/profile",validate(updateUserProfileinSchema), authMiddleware,upload
 router.put("/change-password",validate(changePasswordSchema), authMiddleware, userController.changePassword);
 
 // הוספת כתובת
-router.post("/addresses", authMiddleware, userController.address);
+router.post("/addresses", authMiddleware, userController.addUserAdress);
 
 // עדכון כתובת
 router.put("/addresses/:addrId", authMiddleware, userController.updateAddress);

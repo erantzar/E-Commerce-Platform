@@ -8,7 +8,6 @@ const objectId = Joi.string()
 // ─── createOrderSchema ───────────────────────────────────────
 export const createOrderSchema = Joi.object({
 
-
     items: Joi.array()
         .items(
             Joi.object({
@@ -22,12 +21,7 @@ export const createOrderSchema = Joi.object({
             'array.min': 'An order must contain at least one item.',
         }),
 
-    shippingAddress: Joi.object({
-        city: Joi.string().trim().required(),
-        street: Joi.string().trim().required(),
-        houseNumber: Joi.number().integer().positive().required(),
-        zip: Joi.string().trim().required(),
-    }).required(),
+    addressId: objectId.required(),
 
     paymentMethod: Joi.string()
         .valid('credit', 'paypal', 'simulated')

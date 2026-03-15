@@ -77,7 +77,7 @@ export const changePassword = async (req, res) => {
     }
 
     const user = await User.findById(userId).select("+password");
-     
+
     if (!user) {
       return res.status(404).json({ status: 404, message: "User not found" });
     }
@@ -156,33 +156,31 @@ export const updateAddress = async (req, res) => {
   }
 };
  
-export const address = async (req, res) => {
+export const addUserAdress = async (req, res) => {
   try {
-    const userId = req.user.id; // מגיע מה-authMiddleware
-    const user = await User.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({
-        status: 404,
-        message: "User not found",
-        data: null,
-      });
-    }
+    const userId = req.user.userId;
+    const { city, street, houseNumber, zip } = req.body;
 
-    // לוקחים את הנתונים מה-body (זה ה"פרוק מבנים")
-    const { addresses } = req.body;
+    const user = await User.findByIdAndUpdate(
+      {_id: userId},
+      {
+        $push: {         //push adds to the addresses array
+          addresses: { city, street, houseNumber, zip }
+        }
+      },
+      { new: true, runValidators: true }
+    );
 
-    user.addresses.push({ addresses });
-    await user.save();
+    if (!user) throw new Error("User not found");
 
-    return res.status(201).json({
-      status: 201,
+    res.status(200).json({
+      status: 200,
       message: "Address added successfully",
-      data: user.addresses,
+      data: user,
     });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      status: 500,
+    res.status(400).json({
+      status: 400,
       message: error.message || error,
       data: null,
     });

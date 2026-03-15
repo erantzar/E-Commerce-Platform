@@ -1,6 +1,27 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
+
+const adressSchema = new mongoose.Schema({
+  city: {
+    type: String,
+    required: true
+  },
+  street: {
+    type: String,
+    required: true
+  },
+  houseNumber: {
+    type: Number,
+    required: true
+  },
+  zip: {
+    type: String,
+    required: true
+  }
+});
+
+
 const userSchema = new mongoose.Schema({
 
   // שם מלא
@@ -60,7 +81,7 @@ const userSchema = new mongoose.Schema({
 
   // כתובות (פשוט כ-array של אובייקטים)
   addresses: {
-    type: [],
+    type: [adressSchema],
     default: []
   },
 

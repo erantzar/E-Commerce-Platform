@@ -11,17 +11,33 @@ import Order from "./order.model.js";
  * @access  Confrimed User
  */
 export const createOrder = catchAsync(async (req, res, next) => {
-  const { items, shippingAddress, paymentMethod, notes, shipingCost } = req.body;
-  const user = req.user.userId
-  
-  
+  const { items, addressId, paymentMethod, notes, shipingCost } = req.body;
+  const userId = req.user.userId
+
+  //getting the adress object from user
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  const address = user.addresses.id(addressId);
+  if (!address) throw new Error("Address not found");
+
+  const shippingAddress = {
+    city: address.city,
+    street: address.street,
+    houseNumber: address.houseNumber,
+    zip: address.zip,
+  }
+
   if (!items || items.length === 0) {
     return next(new AppError('An order must contain at least one item.', 400));
   }
 
+
+
   const stockUpdates = [];
   const resolvedItems = [];
   let totalPrice = 0;
+
 
   for (const orderItem of items) {
     const product = await Product.findById(orderItem.product).select('stock price name images isActive sold');
@@ -29,9 +45,9 @@ export const createOrder = catchAsync(async (req, res, next) => {
     if (!product) {
       return next(new AppError(`Product with ID ${orderItem.product} was not found.`, 404));
     }
-    
-    
-    if(!product.isActive){
+
+
+    if (!product.isActive) {
       return next(new AppError(`product ${product.name} is unactive`, 404));
     }
 
@@ -65,7 +81,7 @@ export const createOrder = catchAsync(async (req, res, next) => {
   }
 
   const order = await Order.create({
-    user,
+    user: userId,
     items: resolvedItems,
     shippingAddress,
     paymentMethod,
@@ -87,7 +103,7 @@ export const createOrder = catchAsync(async (req, res, next) => {
  * @access  Confrimed User
  */
 export const myOrders = catchAsync(async (req, res, next) => {
-  const id = req.user.userId; 
+  const id = req.user.userId;
 
   const orders = await Order.find({ user: id });
 
@@ -120,14 +136,14 @@ export const singelOrderById = catchAsync(async (req, res, next) => {
 
   const orderUserId = order.user
   const role = req.user.role
-  if(userId === orderUserId || role === "admin")//only if user is admin or if the order is attached to user 
+  if (userId === orderUserId || role === "admin")//only if user is admin or if the order is attached to user 
   {
     return res.status(200).json({
       status: 'success',
       data: order,
     });
 
-  }else{
+  } else {
     return next(new AppError(`Unauthorized`, 403));
 
   }
@@ -153,12 +169,12 @@ export const getAllOrders = catchAsync(async (req, res, next) => {
   const skip = (pageNum - 1) * limitNum;
 
   const [order, totalOrders] = await Promise.all([
-    
-     Order.find()
+
+    Order.find()
       .sort({ createdAt: -1 })//newst first
       .skip(skip)
       .limit(limitNum),
-     Order.countDocuments()
+    Order.countDocuments()
   ]);
 
   if (order.length === 0) {
@@ -170,14 +186,14 @@ export const getAllOrders = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     results: order.length,
-            pagination: {
-                currentPage: pageNum,
-                totalPages,
-                totalOrders,
-                limit: limitNum,
-                hasNextPage: pageNum < totalPages,
-                hasPrevPage: pageNum > 1
-            },
+    pagination: {
+      currentPage: pageNum,
+      totalPages,
+      totalOrders,
+      limit: limitNum,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1
+    },
     data: order,
   });
 });
@@ -194,7 +210,7 @@ export const updateStatus = catchAsync(async (req, res, next) => {
   const order = await Order.findByIdAndUpdate(
     id,
     { orderStatus },
-    {new: true, runValidators: true}
+    { new: true, runValidators: true }
   );
 
   if (!order) {
