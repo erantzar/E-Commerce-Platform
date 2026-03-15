@@ -82,7 +82,7 @@ export const updateSingleItemInCart = async (req, res) => {
     );
 
     if (cartItemIndex === -1) {
-      return res.status(404).json({               // 👈 return to stop execution
+      return res.status(404).json({               
         status: 404,
         message: "Product not found in cart",
         data: null
@@ -107,23 +107,32 @@ export const updateSingleItemInCart = async (req, res) => {
     });
   }
 };
-export const deleteOwnCart = async (req, res) => {
+export const deleteSingelItemCart = async (req, res) => {
   try {
-    const id = req.user.id;
-    const { productid } = req.params
-    const user = await User.findById(id).select("-password");
+    const id = req.user.userId;
+    const { productId } = req.params
+    const user = await User.findById(id);
     if (!user) throw new Error("User not found");
 
-    for (let i = 0; i < user.cart.length; i++) {
-      if (user.cart[i].product.toString() === productid) {
-        user.cart.splice(i, 1); // מוחק את הפריט מהמערך
-        await user.save();
-        break;
-      }
+
+    const cartItemIndex = user.cart.findIndex(
+      item => item.product.equals(productId)
+    );
+
+    if (cartItemIndex === -1) {
+      return res.status(404).json({               
+        status: 404,
+        message: "Product not found in cart",
+        data: null
+      });
     }
+
+    user.cart.splice(cartItemIndex, 1);
+    await user.save();
+
     res.status(200).json({
       status: 200,
-      message: "postCart successfully",
+      message: "product deleted successfully",
       data: user.cart
     })
   } catch (error) {
@@ -160,7 +169,7 @@ export const deleteCart = async (req, res) => {
 }
 export const syncCart = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const items = req.body.items; // מערך של אובייקטים { product, quantity }
 
     if (!Array.isArray(items) || items.length === 0) {
