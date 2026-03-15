@@ -232,8 +232,7 @@ export const deleteAddress = async (req, res) => {
 // קבלת כל המשתמשים
 export const getAllUsers = async (req, res) => {
   try {
-
-    const users = await User.find().select("-password");         
+    const users = await User.find();         
     return res.status(200).json({
       status: 200,
       message: "Users fetched successfully",
