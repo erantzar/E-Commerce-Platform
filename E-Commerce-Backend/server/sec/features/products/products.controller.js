@@ -145,17 +145,16 @@ export const getProductById = catchAsync(async(req,res,next) => {
  */
 
 export const getProductByCategory = catchAsync(async(req,res,next) => {
-    const {category} = req.params
+    const {cat} = req.params
     
-    if(!category || category == ""){
-        console.log('here');
+    if(!cat || cat == ""){
         
         return next(new AppError('category is requierd', 404))
     }
-    const products = await Product.find({category})
+    const products = await Product.find({category: cat})
 
     if (products.length === 0) { 
-        return next(new AppError(`No items found in category: ${category}`, 404));
+        return next(new AppError(`No items found in category: ${cat}`, 404));
       }
 
     res.status(200).json({
