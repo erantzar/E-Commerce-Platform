@@ -9,8 +9,8 @@ import bcrypt from "bcryptjs";
 
 export const getUserById = async (req,res) => {
   try{
-    const id = req.user.id;
-        const user = await User.findById(id).select("-password");
+    const id = req.user.userId;
+        const user = await User.findById(id)
     if (!user) throw new Error("User not found");
     res.status(200).json({
       status: 200,
@@ -18,7 +18,7 @@ export const getUserById = async (req,res) => {
       data: user
   })
   }catch(error){
-    console.log("User not found(getUserById)")
+    console.log("User not found")
     console.log(error);
     res.status(400).json({
       status: 400,
