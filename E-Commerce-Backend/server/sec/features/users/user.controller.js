@@ -115,41 +115,32 @@ export const changePassword = async (req, res) => {
 
 export const updateAddress = async (req, res) => {
   try {
-    const userId = req.user.id; // מגיע מה-authMiddleware
-    const { addrId } = req.params; // ה-ID של הכתובת שרוצים לעדכן
-    const updateData = req.body; // הנתונים החדשים (למשל city, street וכו')
+    const userId = req.user.userId;
+    const { addrId } = req.params;
+    const { city, street, houseNumber, zip } = req.body;
 
-    // עדכון הכתובת הספציפית בתוך מערך הכתובות
-    // אנחנו מחפשים משתמש שה-ID שלו תואם ושיש לו כתובת עם ה-ID המבוקש
-    const user = await User.findOneAndUpdate(
-      { _id: userId, "addresses._id": addrId }, 
-      {
-        $set: {
-          // ה-$ אומר ל-Mongoose לעדכן בדיוק את האיבר במערך שנמצא בחיפוש
-          "addresses.$": { ...updateData, _id: addrId } 
-        }
-      },
-      { new: true } // מחזיר את המשתמש המעודכן
-    ).select("-password");
+    const user = await User.findById(userId);
+    if (!user) throw new Error("User not found");
 
-    if (!user) {
-      return res.status(404).json({
-        status: 404,
-        message: "User or Address not found",
-        data: null,
-      });
-    }
+    const address = user.addresses.id(addrId); //find subdoc by id
+    if (!address) throw new Error("Address not found");
 
-    return res.status(200).json({
+    //only update fields that were provided
+    if (city) address.city = city;
+    if (street) address.street = street;
+    if (houseNumber) address.houseNumber = houseNumber;
+    if (zip) address.zip = zip;
+
+    await user.save({ validateBeforeSave: true });
+
+    res.status(200).json({
       status: 200,
       message: "Address updated successfully",
-      data: user.addresses,
+      data: user,
     });
-
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      status: 500,
+    res.status(400).json({
+      status: 400,
       message: error.message || error,
       data: null,
     });
