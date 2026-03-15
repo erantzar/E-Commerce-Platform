@@ -127,7 +127,6 @@ export const deleteOwnCart = async (req, res) => {
       data: user.cart
     })
   } catch (error) {
-    console.log("User not found(postCart)")
     console.log(error);
     res.status(400).json({
       status: 400,
@@ -138,8 +137,8 @@ export const deleteOwnCart = async (req, res) => {
 }
 export const deleteCart = async (req, res) => {
   try {
-    const id = req.user.id;
-    const user = await User.findById(id).select("-password");
+    const id = req.user.userId;
+    const user = await User.findById(id);
     if (!user) throw new Error("User not found");
 
     user.cart = [];
@@ -151,7 +150,6 @@ export const deleteCart = async (req, res) => {
       data: user.cart
     })
   } catch (error) {
-    console.log("User not found(postCart)")
     console.log(error);
     res.status(400).json({
       status: 400,
