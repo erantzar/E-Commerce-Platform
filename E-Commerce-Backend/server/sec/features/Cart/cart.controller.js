@@ -189,17 +189,14 @@ export const syncCart = async (req, res) => {
         });
       }
 
-      const cartItem = user.cart.find(
-        item => item.product.toString() === product
+      const cartItemIndex = user.cart.findIndex(
+        item => item.product.equals(product)
       );
 
-      if (cartItem) {
-        cartItem.quantity += quantity;
-      } else {
-        user.cart.push({
-          product,
-          quantity
-        });
+      if (cartItemIndex === -1) {
+        user.cart.push({ product, quantity });
+      }else{
+        user.cart[cartItemIndex].quantity += quantity;
       }
     }
 
