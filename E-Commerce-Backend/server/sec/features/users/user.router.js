@@ -16,7 +16,7 @@ router.get("/profile", authMiddleware ,userController.getUserById);
 // עדכון פרופיל
 router.put("/profile",validate(updateUserProfileinSchema), authMiddleware,uploadUserAvatar.single('image') ,userController.updateUserProfile);
 // שינוי סיסמה
-router.put("/password-change",validate(changePasswordSchema), authMiddleware, userController.changePassword);
+router.put("/change-password",validate(changePasswordSchema), authMiddleware, userController.changePassword);
 
 // הוספת כתובת
 router.post("/addresses", authMiddleware, userController.address);
