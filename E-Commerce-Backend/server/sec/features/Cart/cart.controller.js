@@ -66,46 +66,47 @@ export const addItemsToCart = async (req, res) => {
     });
   }
 };
-export const putCart = async (req, res) => {
+export const updateSingleItemInCart = async (req, res) => {
   try {
-    const id = req.user.id;
+    const userId = req.user.userId;
     const { quantity } = req.body;
-    const { productid } = req.params
+    const { productId } = req.params;
 
-    const user = await User.findById(id).select("-password");
+    if (!quantity || quantity < 1) throw new Error("Invalid quantity");
+
+    const user = await User.findById(userId);
     if (!user) throw new Error("User not found");
-    let chec = false
-    for (let i = 0; i < user.cart.length; i++) {
-      if (user.cart[i].product.toString() === productid) {
-        user.cart[i].quantity = quantity
-        console.log(user);
-        await user.save()
-        chec = true
-        break;
-      }
-    }
-    if (!chec) {
-      res.status(400).json({
-        status: 400,
-        message: "לא מצנו את המוצר",
+
+    const cartItemIndex = user.cart.findIndex(
+      item => item.product.equals(productId)
+    );
+
+    if (cartItemIndex === -1) {
+      return res.status(404).json({               // 👈 return to stop execution
+        status: 404,
+        message: "Product not found in cart",
         data: null
-      })
+      });
     }
+
+    user.cart[cartItemIndex].quantity = quantity;
+    await user.save();
+
     res.status(200).json({
       status: 200,
-      message: "postCart successfully",
+      message: "Cart item updated successfully",
       data: user.cart
-    })
+    });
+
   } catch (error) {
-    console.log("User not found(postCart)")
     console.log(error);
     res.status(400).json({
       status: 400,
       message: error.message || error,
       data: null
-    })
+    });
   }
-}
+};
 export const deleteOwnCart = async (req, res) => {
   try {
     const id = req.user.id;
