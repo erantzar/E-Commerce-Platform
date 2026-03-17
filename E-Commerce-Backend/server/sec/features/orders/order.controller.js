@@ -8,7 +8,7 @@ import { sendOrderStatusEmail } from "../../utils/mailer.js";
 
 /**
  * @desc    Create a new Order
- * @route   POST http://localhost:3000/orders/
+ * @route   Get orders/
  * @access  Confrimed User
  */
 export const createOrder = catchAsync(async (req, res, next) => {
@@ -100,7 +100,7 @@ export const createOrder = catchAsync(async (req, res, next) => {
 
 /**
  * @desc    Get my orders by Id
- * @route   GET http://localhost:3000/orders/my-orders/:id
+ * @route   Get /orders/my-orders/:id
  * @access  Confrimed User
  */
 export const myOrders = catchAsync(async (req, res, next) => {
@@ -121,7 +121,7 @@ export const myOrders = catchAsync(async (req, res, next) => {
 
 /**
  * @desc    Get single orders by Id
- * @route   Get http://localhost:3000/orders/:id
+ * @route   Get /orders/:id
  * @access  Confrimed User/ Admin
  */
 
@@ -154,7 +154,7 @@ export const singelOrderById = catchAsync(async (req, res, next) => {
 
 /**
  * @desc    Get all orders
- * @route   Get http://localhost:3000/orders
+ * @route   Get /orders
  * @access  Admin
  */
 export const getAllOrders = catchAsync(async (req, res, next) => {
@@ -202,7 +202,7 @@ export const getAllOrders = catchAsync(async (req, res, next) => {
 
 /**
  * @desc    update status of order by Id
- * @route   Put http://localhost:3000/orders/:id/status
+ * @route   Put /orders/:id/status
  * @access  Admin
  */
 export const updateStatus = catchAsync(async (req, res, next) => {
@@ -238,7 +238,7 @@ export const updateStatus = catchAsync(async (req, res, next) => {
 
 /**
  * @desc    cancel order
- * @route   Put http://localhost:3000/orders/:id/cancel
+ * @route   Put /orders/:id/cancel
  * @access  Admin
  */
 export const cancelOrder = catchAsync(async (req, res, next) => {

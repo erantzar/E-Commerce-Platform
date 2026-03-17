@@ -8,10 +8,13 @@ import crypto from "crypto";
 
 
 
-function generateCode() {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-}
 
+
+/**
+ * @desc    register new user
+ * @route   Post AuthRoutes/register
+ * @access  all users
+ */
 
 export const register = async (req, res) => {
 
@@ -63,6 +66,11 @@ export const register = async (req, res) => {
     }
 }
 
+/**
+ * @desc    verify user email
+ * @route   Get AuthRoutes/verify-email/:rawToken
+ * @access  registerd user
+ */
 export async function verifyEmail(req, res) {
     try {
 
@@ -89,6 +97,11 @@ export async function verifyEmail(req, res) {
     }
 }
 
+/**
+ * @desc    login user
+ * @route   Post AuthRoutes/login
+ * @access  confrimed user
+ */
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -139,6 +152,11 @@ export const login = async (req, res) => {
     }
 };
 
+/**
+ * @desc    send link for reset password
+ * @route   Post AuthRoutes/password-forgot
+ * @access  confrimed user
+ */
 export const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
@@ -180,6 +198,11 @@ export const forgotPassword = async (req, res) => {
     }
 };
 
+/**
+ * @desc    reset password
+ * @route   Post AuthRoutes/password-reset/:token
+ * @access  confrimed user
+ */
 export const resetPassword = async (req, res) => {
     try {
         const { token } = req.params;
@@ -238,6 +261,11 @@ export const resetPassword = async (req, res) => {
     }
 };
 
+/**
+ * @desc    admin login
+ * @route   Post AuthRoutes/admin/login
+ * @access  Admin
+ */
 export const adminLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -296,6 +324,11 @@ export const adminLogin = async (req, res) => {
     }
 };
 
+/**
+ * @desc    verify admin 
+ * @route   Post AuthRoutes/admin/verify-2fa
+ * @access  Admin
+ */
 export const verify2FA = async (req, res) => {
     try {
         const { userId, code } = req.body;
@@ -361,6 +394,12 @@ export const verify2FA = async (req, res) => {
         });
     }
 };
+
+/**
+ * @desc    get my user info
+ * @route   Get AuthRoutes/me
+ * @access  confrimed user
+ */
 export const getMe = async (req, res) => {
     try {
         const { userId } = req.user
@@ -382,6 +421,11 @@ export const getMe = async (req, res) => {
     }
 };
 
+/**
+ * @desc    logout
+ * @route   Put AuthRoutes/logout
+ * @access  confrimed user
+ */
 export const logout = async (req, res) => {
 
     const {userId} = req.user

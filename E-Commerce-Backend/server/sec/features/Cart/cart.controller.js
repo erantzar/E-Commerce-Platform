@@ -1,6 +1,12 @@
 import Product from "../products/products.model.js";
 import User from "../users/user.model.js";
 
+
+/**
+ * @desc    get user cart
+ * @route   Get /cart
+ * @access  confrimed user
+ */
 export const getCart = async (req, res) => {
   try {
 
@@ -23,6 +29,12 @@ export const getCart = async (req, res) => {
     })
   }
 }
+
+/**
+ * @desc    add item to cart
+ * @route   Post /cart
+ * @access  confrimed user
+ */
 export const addItemsToCart = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -66,6 +78,12 @@ export const addItemsToCart = async (req, res) => {
     });
   }
 };
+
+/**
+ * @desc    add single item to cart
+ * @route   Put /cart/:productId
+ * @access  confrimed user
+ */
 export const updateSingleItemInCart = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -107,6 +125,12 @@ export const updateSingleItemInCart = async (req, res) => {
     });
   }
 };
+
+/**
+ * @desc    delete item from cart
+ * @route   Delete /cart/:productId
+ * @access  confrimed user
+ */
 export const deleteSingelItemCart = async (req, res) => {
   try {
     const id = req.user.userId;
@@ -144,6 +168,12 @@ export const deleteSingelItemCart = async (req, res) => {
     })
   }
 }
+
+/**
+ * @desc    delete item from cart
+ * @route   Delete /cart/:productId
+ * @access  confrimed user
+ */
 export const deleteCart = async (req, res) => {
   try {
     const id = req.user.userId;
@@ -167,6 +197,12 @@ export const deleteCart = async (req, res) => {
     })
   }
 }
+
+/**
+ * @desc    sync user local cart with DB cart
+ * @route   Delete /cart/sync
+ * @access  confrimed user
+ */
 export const syncCart = async (req, res) => {
   try {
     const userId = req.user.userId;

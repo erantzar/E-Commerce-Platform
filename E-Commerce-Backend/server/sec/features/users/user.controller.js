@@ -4,9 +4,11 @@ import User from "./user.model.js";
 import bcrypt from "bcryptjs";
 
 
-// ============================
-// 👤 Regular users
-// ============================
+/**
+ * @desc    get user by Id 
+ * @route   Get /users/profile
+ * @access  confrimed user
+ */
 
 export const getUserById = async (req,res) => {
   try{
@@ -29,6 +31,11 @@ export const getUserById = async (req,res) => {
   }
 };
 
+/**
+ * @desc    update user profile
+ * @route   Put /users/profile
+ * @access  confrimed user
+ */
 export const updateUserProfile = async (req,res) => {
 try {
   const userId = req.user.userId;
@@ -65,6 +72,11 @@ try {
 }
 };
 
+/**
+ * @desc    change user password 
+ * @route   Put /users/change-password
+ * @access  confrimed user
+ */
 export const changePassword = async (req, res) => {
   try {
     const {userId} = req.user;
@@ -109,10 +121,11 @@ export const changePassword = async (req, res) => {
   }
 };
 
-// ============================
-// 🏠 Addresses
-// ============================
-
+/**
+ * @desc    update user address 
+ * @route   Put /users/addresses/:addrId
+ * @access  confrimed user
+ */
 export const updateAddress = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -147,6 +160,11 @@ export const updateAddress = async (req, res) => {
   }
 };
  
+/**
+ * @desc    add new user address 
+ * @route   Put /users/addresses
+ * @access  confrimed user
+ */
 export const addUserAdress = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -178,6 +196,11 @@ export const addUserAdress = async (req, res) => {
   }
 };
 
+/**
+ * @desc    delete user address 
+ * @route   Delete users/addresses/:addrId
+ * @access  confrimed user
+ */
 export const deleteAddress = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -229,7 +252,11 @@ export const deleteAddress = async (req, res) => {
 // 👑 Admin routes
 // ============================
 
-// קבלת כל המשתמשים
+/**
+ * @desc    get all users
+ * @route   Get users/
+ * @access  Admin
+ */
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find();         
@@ -247,7 +274,11 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// שינוי תפקיד משתמש
+/**
+ * @desc    update user role [ADMIN/CUSTOMER]
+ * @route   Put users/role/:id
+ * @access  Admin
+ */
 export const updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
@@ -274,7 +305,11 @@ export const updateUserRole = async (req, res) => {
   }
 };
 
-// מחיקת משתמש
+/**
+ * @desc    delete user by id
+ * @route   Delete users/:id
+ * @access  Admin
+ */
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
