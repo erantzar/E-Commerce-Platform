@@ -27,7 +27,7 @@ export const register = async (req, res) => {
 
         const rawToken = crypto.randomBytes(32).toString("hex");
         console.log(rawToken);
-        const verificationTokenExpiry = Date.now() + 1000 * 60 * 15; // 15 דקות
+        const verificationTokenExpiry = Date.now() + 1000 * 60 * 60*24; // 15 דקות
 
 
         const user = await User.create({
