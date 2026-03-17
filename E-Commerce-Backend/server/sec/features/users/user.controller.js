@@ -45,12 +45,14 @@ try {
   const { name, email } = req.body;
   if (name) user.name = name;
   if (email) user.email = email;
+  
 
+  
   if (req.file) {
     // delete old image from Cloudinary if one exists
     if (user.image) {
-      const publicId = user.image.split('/').slice(-2).join('/').split('.')[0]; // extracts "ecommerce/avatars/filename"
-      await cloudinary.uploader.destroy(publicId);
+      const publicId = user.image.split('/').slice(-3).join('/').split('.')[0]; // extracts "ecommerce/avatars/filename"
+      const result = await cloudinary.uploader.destroy(publicId);
     }
 
     user.image = req.file.path;
