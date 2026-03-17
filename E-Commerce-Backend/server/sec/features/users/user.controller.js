@@ -205,7 +205,7 @@ export const addUserAdress = async (req, res) => {
  */
 export const deleteAddress = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const {userId} = req.user;
     // 1. חילוץ ה-ID מהפרמטרים (שים לב לשם addrId כמו בראוטר)
     const { addrId } = req.params;
 
