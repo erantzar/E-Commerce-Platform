@@ -27,12 +27,15 @@ export const register = async (req, res) => {
 
         const rawToken = crypto.randomBytes(32).toString("hex");
         console.log(rawToken);
+        const verificationTokenExpiry = Date.now() + 1000 * 60 * 15; // 15 דקות
+
 
         const user = await User.create({
             name,
             email,
             verificationToken: rawToken,
-            password: hashed
+            password: hashed,
+            verificationTokenExpiry:verificationTokenExpiry
         })
 
         const link = `http://localhost:3000/api/v1/AuthRoutes/verify-email/${rawToken}`;
@@ -76,18 +79,21 @@ export async function verifyEmail(req, res) {
 
         const { rawToken } = req.params;
 
-        const user = await User.findOne({ verificationToken: rawToken });
+        const user = await User.findOne({ 
+            verificationToken: rawToken,
+            verificationTokenExpiry:{ $gt: Date.now() }});
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        if (user.verificationToken !== rawToken) {
+        if (user.verificationToken !== rawToken ) {
             return res.status(400).json({ message: "Invalid rawToken" });
         }
 
         user.isVerified = true;
         user.verificationToken = null;
+        user.verificationTokenExpiry = null;
 
         await user.save();
 
@@ -133,7 +139,7 @@ export const login = async (req, res) => {
         const token = jwt.sign(
             { userId: user._id, email: user.email, role: user.role },
             process.env.JWT_SECRET,
-            { expiresIn: "30m" }
+            { expiresIn: "7d" }
         );
 
         return res.status(200).json({
