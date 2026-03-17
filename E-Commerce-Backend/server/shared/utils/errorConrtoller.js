@@ -31,8 +31,13 @@ const handleJWTExpiredError = () => new AppError('Your token has expired! Please
 const handleMulterError = err => {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return new AppError('Image size must be less than 5MB.', 400);
+    }else if (err.code === 'LIMIT_UNEXPECTED_FILE'){
+        return new AppError('you can upload only one profile image', 400);
+    }else {
+        return new AppError('Multer File Error', 400);
     }
-    return new AppError('File upload error.', 400);
+
+    
   };
   
 
