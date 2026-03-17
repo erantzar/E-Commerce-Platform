@@ -4,24 +4,41 @@ import Product from "../products/products.model.js";
 import User from '../users/user.model.js'
 import { sendOrderEmail } from "../../utils/mailer.js";
 import Order from "./order.model.js";
+import { sendOrderStatusEmail } from "../../utils/mailer.js";
 
 /**
  * @desc    Create a new Order
- * @route   POST http://localhost:3000/orders/
+ * @route   Get orders/
  * @access  Confrimed User
  */
 export const createOrder = catchAsync(async (req, res, next) => {
-  const { items, shippingAddress, paymentMethod, notes, shipingCost } = req.body;
-  const user = req.user.userId
-  
-  
+  const { items, addressId, paymentMethod, notes, shipingCost } = req.body;
+  const userId = req.user.userId
+
+  //getting the adress object from user
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  const address = user.addresses.id(addressId);
+  if (!address) throw new Error("Address not found");
+
+  const shippingAddress = {
+    city: address.city,
+    street: address.street,
+    houseNumber: address.houseNumber,
+    zip: address.zip,
+  }
+
   if (!items || items.length === 0) {
     return next(new AppError('An order must contain at least one item.', 400));
   }
 
+
+
   const stockUpdates = [];
   const resolvedItems = [];
   let totalPrice = 0;
+
 
   for (const orderItem of items) {
     const product = await Product.findById(orderItem.product).select('stock price name images isActive sold');
@@ -29,9 +46,9 @@ export const createOrder = catchAsync(async (req, res, next) => {
     if (!product) {
       return next(new AppError(`Product with ID ${orderItem.product} was not found.`, 404));
     }
-    
-    
-    if(!product.isActive){
+
+
+    if (!product.isActive) {
       return next(new AppError(`product ${product.name} is unactive`, 404));
     }
 
@@ -65,7 +82,7 @@ export const createOrder = catchAsync(async (req, res, next) => {
   }
 
   const order = await Order.create({
-    user,
+    user: userId,
     items: resolvedItems,
     shippingAddress,
     paymentMethod,
@@ -83,13 +100,13 @@ export const createOrder = catchAsync(async (req, res, next) => {
 
 /**
  * @desc    Get my orders by Id
- * @route   GET http://localhost:3000/orders/my-orders/:id
+ * @route   Get /orders/my-orders/:id
  * @access  Confrimed User
  */
 export const myOrders = catchAsync(async (req, res, next) => {
-  const id = req.user.userId; 
+  const id = req.user.userId;
 
-  const orders = await Order.find({ user: id });
+  const orders = await Order.find({ user: id }).lean();
 
   if (orders.length === 0) {
     return next(new AppError(`No orders found for user with ID: ${id}`, 404));
@@ -104,7 +121,7 @@ export const myOrders = catchAsync(async (req, res, next) => {
 
 /**
  * @desc    Get single orders by Id
- * @route   Get http://localhost:3000/orders/:id
+ * @route   Get /orders/:id
  * @access  Confrimed User/ Admin
  */
 
@@ -112,7 +129,7 @@ export const singelOrderById = catchAsync(async (req, res, next) => {
   const id = req.params.id;
   const userId = req.user.userId
 
-  const order = await Order.findById(id);
+  const order = await Order.findById(id).lean();
 
   if (!order) {
     return next(new AppError(`No order found with ID: ${id}`, 404));
@@ -120,14 +137,14 @@ export const singelOrderById = catchAsync(async (req, res, next) => {
 
   const orderUserId = order.user
   const role = req.user.role
-  if(userId === orderUserId || role === "admin")//only if user is admin or if the order is attached to user 
+  if (userId === orderUserId || role === "admin")//only if user is admin or if the order is attached to user 
   {
     return res.status(200).json({
       status: 'success',
       data: order,
     });
 
-  }else{
+  } else {
     return next(new AppError(`Unauthorized`, 403));
 
   }
@@ -137,7 +154,7 @@ export const singelOrderById = catchAsync(async (req, res, next) => {
 
 /**
  * @desc    Get all orders
- * @route   Get http://localhost:3000/orders
+ * @route   Get /orders
  * @access  Admin
  */
 export const getAllOrders = catchAsync(async (req, res, next) => {
@@ -153,12 +170,13 @@ export const getAllOrders = catchAsync(async (req, res, next) => {
   const skip = (pageNum - 1) * limitNum;
 
   const [order, totalOrders] = await Promise.all([
-    
-     Order.find()
+
+    Order.find()
       .sort({ createdAt: -1 })//newst first
       .skip(skip)
-      .limit(limitNum),
-     Order.countDocuments()
+      .limit(limitNum)
+      .lean(),
+    Order.countDocuments()
   ]);
 
   if (order.length === 0) {
@@ -170,36 +188,47 @@ export const getAllOrders = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     results: order.length,
-            pagination: {
-                currentPage: pageNum,
-                totalPages,
-                totalOrders,
-                limit: limitNum,
-                hasNextPage: pageNum < totalPages,
-                hasPrevPage: pageNum > 1
-            },
+    pagination: {
+      currentPage: pageNum,
+      totalPages,
+      totalOrders,
+      limit: limitNum,
+      hasNextPage: pageNum < totalPages,
+      hasPrevPage: pageNum > 1
+    },
     data: order,
   });
 });
 
 /**
- * @desc    update ststus of order by Id
- * @route   Put http://localhost:3000/orders/:id/status
+ * @desc    update status of order by Id
+ * @route   Put /orders/:id/status
  * @access  Admin
  */
 export const updateStatus = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const { orderStatus } = req.body;
+  
 
   const order = await Order.findByIdAndUpdate(
     id,
     { orderStatus },
-    {new: true, runValidators: true}
-  );
+    { 
+      returnDocument: 'after', // במקום new: true
+      runValidators: true 
+    }
+  )
+  .populate({
+    path: 'user',
+    select: 'email -_id'
+  })
+  .lean();
 
   if (!order) {
     return next(new AppError(`No orders found with ID: ${id}`, 404));
   }
+
+  sendOrderStatusEmail(order.user.email, id ,orderStatus)
 
   res.status(200).json({
     status: 'success',
@@ -209,7 +238,7 @@ export const updateStatus = catchAsync(async (req, res, next) => {
 
 /**
  * @desc    cancel order
- * @route   Put http://localhost:3000/orders/:id/cancel
+ * @route   Put /orders/:id/cancel
  * @access  Admin
  */
 export const cancelOrder = catchAsync(async (req, res, next) => {

@@ -1,16 +1,19 @@
 // user.service.js
+import cloudinary from "../../config/cloudinary.js";
 import User from "./user.model.js";
 import bcrypt from "bcryptjs";
 
 
-// ============================
-// 👤 Regular users
-// ============================
+/**
+ * @desc    get user by Id 
+ * @route   Get /users/profile
+ * @access  confrimed user
+ */
 
 export const getUserById = async (req,res) => {
   try{
-    const id = req.user.id;
-        const user = await User.findById(id).select("-password");
+    const id = req.user.userId;
+        const user = await User.findById(id)
     if (!user) throw new Error("User not found");
     res.status(200).json({
       status: 200,
@@ -18,7 +21,7 @@ export const getUserById = async (req,res) => {
       data: user
   })
   }catch(error){
-    console.log("User not found(getUserById)")
+    console.log("User not found")
     console.log(error);
     res.status(400).json({
       status: 400,
@@ -28,25 +31,40 @@ export const getUserById = async (req,res) => {
   }
 };
 
+/**
+ * @desc    update user profile
+ * @route   Put /users/profile
+ * @access  confrimed user
+ */
 export const updateUserProfile = async (req,res) => {
 try {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const user = await User.findById(userId);
-  if (!user) throw new Error("User not found(updateUserProfile)");
-
+  if (!user) throw new Error("User not found");
   // עדכון שדות פרופיל (למשל שם ואימייל)
   const { name, email } = req.body;
   if (name) user.name = name;
   if (email) user.email = email;
+  
 
-  await user.save();
+  
+  if (req.file) {
+    // delete old image from Cloudinary if one exists
+    if (user.image) {
+      const publicId = user.image.split('/').slice(-3).join('/').split('.')[0]; // extracts "ecommerce/avatars/filename"
+      const result = await cloudinary.uploader.destroy(publicId);
+    }
+
+    user.image = req.file.path;
+  }
+
+  await user.save({ validateBeforeSave: true });
   res.status(200).json({
     status: 200,
     message: " update User Profile successfully",
     data: user
 })
 } catch (error) {
-  console.log("User not found(updateUserProfile)")
   console.log(error);
   res.status(400).json({
     status: 400,
@@ -55,11 +73,15 @@ try {
 })
 }
 };
-//בעיה כטנה שאין לי מוסג איך ליפטור changePassword
 
+/**
+ * @desc    change user password 
+ * @route   Put /users/change-password
+ * @access  confrimed user
+ */
 export const changePassword = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const {userId} = req.user;
     // 1. חילוץ הסיסמאות מגוף הבקשה
     const { oldPassword, newPassword } = req.body;
 
@@ -69,6 +91,7 @@ export const changePassword = async (req, res) => {
     }
 
     const user = await User.findById(userId).select("+password");
+
     if (!user) {
       return res.status(404).json({ status: 404, message: "User not found" });
     }
@@ -80,14 +103,14 @@ export const changePassword = async (req, res) => {
     }
 
     // 3. עדכון הסיסמה (ה-Hashing יקרה ב-pre-save כפי שציינת)
-    user.password = newPassword;
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
     // 4. החזרת תשובה תקינה
     res.status(200).json({
       status: 200,
       message: "Password updated successfully",
-      data: null // תוקן מ-nell
+      data: null
     });
 
   } catch (error) {
@@ -100,89 +123,89 @@ export const changePassword = async (req, res) => {
   }
 };
 
-// ============================
-// 🏠 Addresses
-// ============================
-
+/**
+ * @desc    update user address 
+ * @route   Put /users/addresses/:addrId
+ * @access  confrimed user
+ */
 export const updateAddress = async (req, res) => {
   try {
-    const userId = req.user.id; // מגיע מה-authMiddleware
-    const { addrId } = req.params; // ה-ID של הכתובת שרוצים לעדכן
-    const updateData = req.body; // הנתונים החדשים (למשל city, street וכו')
+    const userId = req.user.userId;
+    const { addrId } = req.params;
+    const { city, street, houseNumber, zip } = req.body;
 
-    // עדכון הכתובת הספציפית בתוך מערך הכתובות
-    // אנחנו מחפשים משתמש שה-ID שלו תואם ושיש לו כתובת עם ה-ID המבוקש
-    const user = await User.findOneAndUpdate(
-      { _id: userId, "addresses._id": addrId }, 
-      {
-        $set: {
-          // ה-$ אומר ל-Mongoose לעדכן בדיוק את האיבר במערך שנמצא בחיפוש
-          "addresses.$": { ...updateData, _id: addrId } 
-        }
-      },
-      { new: true } // מחזיר את המשתמש המעודכן
-    ).select("-password");
+    const user = await User.findById(userId);
+    if (!user) throw new Error("User not found");
 
-    if (!user) {
-      return res.status(404).json({
-        status: 404,
-        message: "User or Address not found",
-        data: null,
-      });
-    }
+    const address = user.addresses.id(addrId); //find subdoc by id
+    if (!address) throw new Error("Address not found");
 
-    return res.status(200).json({
+    //only update fields that were provided
+    if (city) address.city = city;
+    if (street) address.street = street;
+    if (houseNumber) address.houseNumber = houseNumber;
+    if (zip) address.zip = zip;
+
+    await user.save({ validateBeforeSave: true });
+
+    res.status(200).json({
       status: 200,
       message: "Address updated successfully",
-      data: user.addresses,
+      data: user,
     });
-
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      status: 500,
+    res.status(400).json({
+      status: 400,
       message: error.message || error,
       data: null,
     });
   }
 };
  
-export const address = async (req, res) => {
+/**
+ * @desc    add new user address 
+ * @route   Put /users/addresses
+ * @access  confrimed user
+ */
+export const addUserAdress = async (req, res) => {
   try {
-    const userId = req.user.id; // מגיע מה-authMiddleware
-    const user = await User.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({
-        status: 404,
-        message: "User not found",
-        data: null,
-      });
-    }
+    const userId = req.user.userId;
+    const { city, street, houseNumber, zip } = req.body;
 
-    // לוקחים את הנתונים מה-body (זה ה"פרוק מבנים")
-    const { addresses } = req.body;
+    const user = await User.findByIdAndUpdate(
+      {_id: userId},
+      {
+        $push: {         //push adds to the addresses array
+          addresses: { city, street, houseNumber, zip }
+        }
+      },
+      { new: true, runValidators: true }
+    );
 
-    user.addresses.push({ addresses });
-    await user.save();
+    if (!user) throw new Error("User not found");
 
-    return res.status(201).json({
-      status: 201,
+    res.status(200).json({
+      status: 200,
       message: "Address added successfully",
-      data: user.addresses,
+      data: user,
     });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({
-      status: 500,
+    res.status(400).json({
+      status: 400,
       message: error.message || error,
       data: null,
     });
   }
 };
 
+/**
+ * @desc    delete user address 
+ * @route   Delete users/addresses/:addrId
+ * @access  confrimed user
+ */
 export const deleteAddress = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const {userId} = req.user;
     // 1. חילוץ ה-ID מהפרמטרים (שים לב לשם addrId כמו בראוטר)
     const { addrId } = req.params;
 
@@ -231,11 +254,14 @@ export const deleteAddress = async (req, res) => {
 // 👑 Admin routes
 // ============================
 
-// קבלת כל המשתמשים
+/**
+ * @desc    get all users
+ * @route   Get users/
+ * @access  Admin
+ */
 export const getAllUsers = async (req, res) => {
   try {
-
-    const users = await User.find().select("-password");         
+    const users = await User.find();         
     return res.status(200).json({
       status: 200,
       message: "Users fetched successfully",
@@ -250,7 +276,11 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// שינוי תפקיד משתמש
+/**
+ * @desc    update user role [ADMIN/CUSTOMER]
+ * @route   Put users/role/:id
+ * @access  Admin
+ */
 export const updateUserRole = async (req, res) => {
   try {
     const { id } = req.params;
@@ -277,7 +307,11 @@ export const updateUserRole = async (req, res) => {
   }
 };
 
-// מחיקת משתמש
+/**
+ * @desc    delete user by id
+ * @route   Delete users/:id
+ * @access  Admin
+ */
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;

@@ -1,6 +1,27 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
+
+const adressSchema = new mongoose.Schema({
+  city: {
+    type: String,
+    required: true
+  },
+  street: {
+    type: String,
+    required: true
+  },
+  houseNumber: {
+    type: Number,
+    required: true
+  },
+  zip: {
+    type: String,
+    required: true
+  }
+});
+
+
 const userSchema = new mongoose.Schema({
 
   // שם מלא
@@ -27,6 +48,10 @@ const userSchema = new mongoose.Schema({
     minlength: 8,
     select: false
     //select: true
+  },
+
+  image: {
+    type: String
   },
 
 
@@ -56,7 +81,7 @@ const userSchema = new mongoose.Schema({
 
   // כתובות (פשוט כ-array של אובייקטים)
   addresses: {
-    type: [],
+    type: [adressSchema],
     default: []
   },
 
@@ -66,11 +91,13 @@ const userSchema = new mongoose.Schema({
       {
         product: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Product"
+          ref: "Product",
+          required: true
         },
         quantity: {
           type: Number,
-          min: 1
+          min: 1,
+          required: true
         }
       }
     ],

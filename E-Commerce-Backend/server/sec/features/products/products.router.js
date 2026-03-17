@@ -16,13 +16,13 @@ import { uploadProductImage } from "../../config/cloudinary.js";
 
 const routerProduct = express.Router();
 
-routerProduct.post('/', validate(createProductSchema),createProduct);
-routerProduct.post('/:id/rating',validate(ratinigSchema),addProductRating);
+routerProduct.post('/', validate(createProductSchema) ,authMiddleware, checkRole, uploadProductImage.array('images', 4), createProduct);
+routerProduct.post('/:id/rating',validate(ratinigSchema),authMiddleware, addProductRating);
 routerProduct.get('/', getAllProducts)
-routerProduct.get('/category/:category', getProductByCategory)
+routerProduct.get('/category/:cat', getProductByCategory)
 routerProduct.get('/:id', getProductById)
-routerProduct.put('/:id', validate(updateProductSchema) ,updateProduct)
-routerProduct.delete('/:id', deleteProduct)
+routerProduct.put('/:id', validate(updateProductSchema),authMiddleware, checkRole, uploadProductImage.array('images', 4) ,updateProduct)
+routerProduct.delete('/:id',authMiddleware, checkRole, deleteProduct)
 
 export default routerProduct
 

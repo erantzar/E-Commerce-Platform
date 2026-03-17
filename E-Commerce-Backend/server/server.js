@@ -10,7 +10,7 @@ import {globalErrorHandler} from './shared/utils/errorConrtoller.js'
 import helmet from 'helmet';
 import cors from 'cors'
 import corsOptions from "./sec/config/cors.config.js";
-import cartRoutes from "./sec/features/Cart/cart.routes.js";
+import cartRoutes from "./sec/features/Cart/cart.router.js";
 
 const app = express();
 

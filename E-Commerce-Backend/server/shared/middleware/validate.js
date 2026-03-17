@@ -1,9 +1,12 @@
 import AppError from "../utils/appError.js";
 
 
-export const validate = (schema) => (req, res, next) => {
-    const { error, value } = schema.validate(req.body, {
-      abortEarly: false  // return ALL errors at once, not just the first one
+export const validate = (schema, proparty = "body") => (req, res, next) => {
+
+    const input = req[proparty];
+    const { error, value } = schema.validate(input, {
+      abortEarly: false,  // return ALL errors at once, not just the first one
+      stripUnknown: true
     });
   
     if (error) {
@@ -13,6 +16,6 @@ export const validate = (schema) => (req, res, next) => {
       return next(new AppError(messages, 400));
     }
   
-    req.body = value; // replace body with the validated & cleaned value
+    req[proparty] = value; // replace body with the validated & cleaned value
     next();
   };

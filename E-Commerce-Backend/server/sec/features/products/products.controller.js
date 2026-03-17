@@ -93,7 +93,8 @@ export const getAllProducts = catchAsync(async (req, res, next) => {
                 .sort(sortBy)
                 .skip(skip)
                 .limit(limitNum)
-                .select('-ratings'), // exclude the full ratings array for performance
+                .select('-ratings')
+                .lean(), // exclude the full ratings array for performance
             Product.countDocuments(filter)
         ]);
 
@@ -127,7 +128,7 @@ export const getAllProducts = catchAsync(async (req, res, next) => {
 export const getProductById = catchAsync(async(req,res,next) => {
     const {id} = req.params
     
-    const product = await Product.findById(id);
+    const product = await Product.findById(id).lean();
     if (!product){
         return next(new AppError('No product found with that ID', 404))
     }
@@ -145,17 +146,16 @@ export const getProductById = catchAsync(async(req,res,next) => {
  */
 
 export const getProductByCategory = catchAsync(async(req,res,next) => {
-    const {category} = req.params
+    const {cat} = req.params
     
-    if(!category || category == ""){
-        console.log('here');
+    if(!cat || cat == ""){
         
         return next(new AppError('category is requierd', 404))
     }
-    const products = await Product.find({category})
+    const products = await Product.find({category: cat}).lean()
 
     if (products.length === 0) { 
-        return next(new AppError(`No items found in category: ${category}`, 404));
+        return next(new AppError(`No items found in category: ${cat}`, 404));
       }
 
     res.status(200).json({

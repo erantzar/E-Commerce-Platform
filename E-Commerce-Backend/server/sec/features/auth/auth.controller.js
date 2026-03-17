@@ -2,36 +2,40 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"
 import User from "../users/user.model.js";
 import dotenv from "dotenv"
-import { sendVerificationEmail, linkAndEmail } from "../../utils/mailer.js";
+import { sendVerificationEmail, sendResetPasswordEmail, sendTwoFactorEmail } from "../../utils/mailer.js";
 dotenv.config()
 import crypto from "crypto";
 
 
- function generateCode() {
-     return Math.floor(100000 + Math.random() * 900000).toString();
- }
 
+
+
+/**
+ * @desc    register new user
+ * @route   Post AuthRoutes/register
+ * @access  all users
+ */
 
 export const register = async (req, res) => {
-    
+
     try {
         const { name, email, password } = req.body
         console.log(email);
-        
+
         const hashed = await bcrypt.hash(password, 10)
         console.log(hashed);
-        
+
         const rawToken = crypto.randomBytes(32).toString("hex");
         console.log(rawToken);
-        
+
         const user = await User.create({
             name,
             email,
             verificationToken: rawToken,
             password: hashed
         })
-        
-        const link = `http://localhost:3000/verify-email/${rawToken}`;
+
+        const link = `http://localhost:3000/api/v1/AuthRoutes/verify-email/${rawToken}`;
 
         await sendVerificationEmail(email, link)
 
@@ -62,12 +66,17 @@ export const register = async (req, res) => {
     }
 }
 
+/**
+ * @desc    verify user email
+ * @route   Get AuthRoutes/verify-email/:rawToken
+ * @access  registerd user
+ */
 export async function verifyEmail(req, res) {
     try {
 
         const { rawToken } = req.params;
 
-        const user = await User.findOne({ verificationToken:rawToken });
+        const user = await User.findOne({ verificationToken: rawToken });
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
@@ -88,11 +97,15 @@ export async function verifyEmail(req, res) {
     }
 }
 
+/**
+ * @desc    login user
+ * @route   Post AuthRoutes/login
+ * @access  confrimed user
+ */
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
-
+        const user = await User.findOne({ email }).select('+password');
         if (!user) {
             return res.status(400).json({
                 status: 400,
@@ -108,7 +121,6 @@ export const login = async (req, res) => {
                 data: null
             });
         }
-
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
             return res.status(400).json({
@@ -140,108 +152,120 @@ export const login = async (req, res) => {
     }
 };
 
+/**
+ * @desc    send link for reset password
+ * @route   Post AuthRoutes/password-forgot
+ * @access  confrimed user
+ */
 export const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
+    try {
+        const { email } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) throw new Error("User not found");
+        const user = await User.findOne({ email });
+        if (!user) throw new Error("User not found");
 
-    // יוצרים טוקן רנדומלי
-    const rawToken = crypto.randomBytes(32).toString("hex");
+        // יוצרים טוקן רנדומלי
+        const rawToken = crypto.randomBytes(32).toString("hex");
 
-    // יוצרים hash לשמירה במסד
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(rawToken)
-      .digest("hex");
+        // יוצרים hash לשמירה במסד
+        const hashedToken = crypto
+            .createHash("sha256")
+            .update(rawToken)
+            .digest("hex");
 
-    // שומרים במסד
-    user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpiry = Date.now() + 1000 * 60 * 15; // 15 דקות
-    await user.save();
+        // שומרים במסד
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpiry = Date.now() + 1000 * 60 * 15; // 15 דקות
+        await user.save();
 
-    // שולחים למייל את הטוקן המקורי
-    const link = `http://localhost:3000/reset-password/${rawToken}`;
+        // שולחים למייל את הטוקן המקורי
+        const link = `http://localhost:3000/api/v1/AuthRoutes/reset-password/${rawToken}`;
 
-    await linkAndEmail(email, link);
+        await sendResetPasswordEmail(email, link);
 
-    return res.status(200).json({
-      status: 200,
-      message: "Reset link sent successfully",
-      data: link,
-    });
+        return res.status(200).json({
+            status: 200,
+            message: "Reset link sent successfully",
+            data: link,
+        });
 
-  } catch (error) {
-    return res.status(500).json({
-      status: 500,
-      message: error.message,
-      data: null,
-    });
-  }
+    } catch (error) {
+        return res.status(500).json({
+            status: 500,
+            message: error.message,
+            data: null,
+        });
+    }
 };
 
-
+/**
+ * @desc    reset password
+ * @route   Post AuthRoutes/password-reset/:token
+ * @access  confrimed user
+ */
 export const resetPassword = async (req, res) => {
-  try {
-    const { token } = req.params;
-    const { password } = req.body;
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
 
-    if (!password) {
-      return res.status(400).json({
-        status: 400,
-        message: "Password is required",
-        data: null,
-      });
+        if (!password) {
+            return res.status(400).json({
+                status: 400,
+                message: "Password is required",
+                data: null,
+            });
+        }
+
+        // יוצרים hash לטוקן שהגיע מהלינק
+        const hashedToken = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        // מחפשים משתמש עם טוקן תקף
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpiry: { $gt: Date.now() },
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                status: 400,
+                message: "Token invalid or expired",
+                data: null,
+            });
+        }
+
+        // מצפינים סיסמה חדשה
+        const hashedPassword = await bcrypt.hash(password, 10);
+        user.password = hashedPassword;
+
+        // מוחקים את הטוקן
+        user.resetPasswordToken = null;
+        user.resetPasswordExpiry = null;
+
+        await user.save();
+
+        return res.status(200).json({
+            status: 200,
+            message: "Password reset successfully",
+            data: null,
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            status: 500,
+            message: error.message,
+            data: null,
+        });
     }
-
-    // יוצרים hash לטוקן שהגיע מהלינק
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
-
-    // מחפשים משתמש עם טוקן תקף
-    const user = await User.findOne({
-      resetPasswordToken: hashedToken,
-      resetPasswordExpiry: { $gt: Date.now() },
-    });
- 
-    console.log(user);
-
-    if (!user) {
-      return res.status(400).json({
-        status: 400,
-        message: "Token invalid or expired",
-        data: null,
-      });
-    }
-
-    // מצפינים סיסמה חדשה
-    const hashedPassword = await bcrypt.hash(password, 10);
-    user.password = hashedPassword;
-
-    // מוחקים את הטוקן
-    user.resetPasswordToken = null;
-    user.resetPasswordExpires = null;
-
-    await user.save();
-
-    return res.status(200).json({
-      status: 200,
-      message: "Password reset successfully",
-      data: null,
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      status: 500,
-      message: error.message,
-      data: null,
-    });
-  }
 };
 
+/**
+ * @desc    admin login
+ * @route   Post AuthRoutes/admin/login
+ * @access  Admin
+ */
 export const adminLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -279,7 +303,7 @@ export const adminLogin = async (req, res) => {
         user.twoFactorCode = twoFactorCode;
         user.twoFactorExpiry = twoFactorExpiry;
         await user.save();
-        await linkAndEmail(email, twoFactorCode);
+        await sendTwoFactorEmail(email, twoFactorCode);
         // שולחים את הקוד למייל או SMS
         // כאן אפשר להשתמש בפונקציה קיימת כמו sendVerificationEmail
         // sendVerificationEmail(user.email, `Your 2FA code is: ${twoFactorCode}`)
@@ -300,6 +324,11 @@ export const adminLogin = async (req, res) => {
     }
 };
 
+/**
+ * @desc    verify admin 
+ * @route   Post AuthRoutes/admin/verify-2fa
+ * @access  Admin
+ */
 export const verify2FA = async (req, res) => {
     try {
         const { userId, code } = req.body;
@@ -365,23 +394,58 @@ export const verify2FA = async (req, res) => {
         });
     }
 };
+
+/**
+ * @desc    get my user info
+ * @route   Get AuthRoutes/me
+ * @access  confrimed user
+ */
 export const getMe = async (req, res) => {
-        try{
-          const { id } = req.params
-              const user = await User.findById(id).select("+password");
-          if (!user) throw new Error("User not found");
-          res.status(200).json({
+    try {
+        const { userId } = req.user
+        const user = await User.findById(userId);
+        if (!user) throw new Error("User not found");
+        res.status(200).json({
             status: 200,
             message: "User fetched successfully",
             data: user
         })
-        }catch(error){
-          console.log("User not found(getUserById)")
-          console.log(error);
-          res.status(400).json({
+    } catch (error) {
+        console.log("User not found")
+        console.log(error);
+        res.status(400).json({
             status: 400,
             message: error.message || error,
             data: null
         })
-        }
-      };
+    }
+};
+
+/**
+ * @desc    logout
+ * @route   Put AuthRoutes/logout
+ * @access  confrimed user
+ */
+export const logout = async (req, res) => {
+
+    const {userId} = req.user
+    try {
+        const user = await User.findByIdAndUpdate({ _id: userId }, { verificationToken: null })
+
+        res.status(200).json({
+            status: 200,
+            message: "User logut successfully",
+            data: user
+        })
+    } catch (error) {
+        res.status(400).json({
+            status: 400,
+            message: error.message || error,
+            data: null
+        })
+    }
+
+    
+
+
+}

@@ -44,7 +44,7 @@ export const deleteAddress = async (userId, addressId) => {
 
 // Admin
 export const getAllUsers = async () => {
-  return User.find().select("-password");
+  return User.find().select("-password").lean();
 };
 
 export const updateUserRole = async (id, role) => {
