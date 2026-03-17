@@ -242,7 +242,7 @@ export const resetPassword = async (req, res) => {
 
         // מוחקים את הטוקן
         user.resetPasswordToken = null;
-        user.resetPasswordExpires = null;
+        user.resetPasswordExpiry = null;
 
         await user.save();
 

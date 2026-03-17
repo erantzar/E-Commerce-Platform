@@ -5,7 +5,8 @@ export const validate = (schema, proparty = "body") => (req, res, next) => {
 
     const input = req[proparty];
     const { error, value } = schema.validate(input, {
-      abortEarly: false  // return ALL errors at once, not just the first one
+      abortEarly: false,  // return ALL errors at once, not just the first one
+      stripUnknown: true
     });
   
     if (error) {
