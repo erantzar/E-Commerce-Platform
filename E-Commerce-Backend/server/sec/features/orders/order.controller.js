@@ -4,6 +4,7 @@ import Product from "../products/products.model.js";
 import User from '../users/user.model.js'
 import { sendOrderEmail } from "../../utils/mailer.js";
 import Order from "./order.model.js";
+import { sendOrderStatusEmail } from "../../utils/mailer.js";
 
 /**
  * @desc    Create a new Order
@@ -199,23 +200,34 @@ export const getAllOrders = catchAsync(async (req, res, next) => {
 });
 
 /**
- * @desc    update ststus of order by Id
+ * @desc    update status of order by Id
  * @route   Put http://localhost:3000/orders/:id/status
  * @access  Admin
  */
 export const updateStatus = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const { orderStatus } = req.body;
+  
 
   const order = await Order.findByIdAndUpdate(
     id,
     { orderStatus },
-    { new: true, runValidators: true }
-  );
+    { 
+      returnDocument: 'after', // במקום new: true
+      runValidators: true 
+    }
+  )
+  .populate({
+    path: 'user',
+    select: 'email -_id'
+  })
+  .lean();
 
   if (!order) {
     return next(new AppError(`No orders found with ID: ${id}`, 404));
   }
+
+  sendOrderStatusEmail(order.user.email, id ,orderStatus)
 
   res.status(200).json({
     status: 'success',

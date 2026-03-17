@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken"
 import User from "../users/user.model.js";
 import dotenv from "dotenv"
-import { sendVerificationEmail, linkAndEmail } from "../../utils/mailer.js";
+import { sendVerificationEmail, sendResetPasswordEmail, sendTwoFactorEmail } from "../../utils/mailer.js";
 dotenv.config()
 import crypto from "crypto";
 
@@ -32,7 +32,7 @@ export const register = async (req, res) => {
             password: hashed
         })
 
-        const link = `http://localhost:3000/verify-email/${rawToken}`;
+        const link = `http://localhost:3000/api/v1/AuthRoutes/verify-email/${rawToken}`;
 
         await sendVerificationEmail(email, link)
 
@@ -161,9 +161,9 @@ export const forgotPassword = async (req, res) => {
         await user.save();
 
         // שולחים למייל את הטוקן המקורי
-        const link = `http://localhost:3000/reset-password/${rawToken}`;
+        const link = `http://localhost:3000/api/v1/AuthRoutes/reset-password/${rawToken}`;
 
-        await linkAndEmail(email, link);
+        await sendResetPasswordEmail(email, link);
 
         return res.status(200).json({
             status: 200,
@@ -179,7 +179,6 @@ export const forgotPassword = async (req, res) => {
         });
     }
 };
-
 
 export const resetPassword = async (req, res) => {
     try {
@@ -276,7 +275,7 @@ export const adminLogin = async (req, res) => {
         user.twoFactorCode = twoFactorCode;
         user.twoFactorExpiry = twoFactorExpiry;
         await user.save();
-        await sendVerificationEmail(email, twoFactorCode);
+        await sendTwoFactorEmail(email, twoFactorCode);
         // שולחים את הקוד למייל או SMS
         // כאן אפשר להשתמש בפונקציה קיימת כמו sendVerificationEmail
         // sendVerificationEmail(user.email, `Your 2FA code is: ${twoFactorCode}`)
