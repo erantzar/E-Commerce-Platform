@@ -106,7 +106,7 @@ export const createOrder = catchAsync(async (req, res, next) => {
 export const myOrders = catchAsync(async (req, res, next) => {
   const id = req.user.userId;
 
-  const orders = await Order.find({ user: id });
+  const orders = await Order.find({ user: id }).lean();
 
   if (orders.length === 0) {
     return next(new AppError(`No orders found for user with ID: ${id}`, 404));
@@ -129,7 +129,7 @@ export const singelOrderById = catchAsync(async (req, res, next) => {
   const id = req.params.id;
   const userId = req.user.userId
 
-  const order = await Order.findById(id);
+  const order = await Order.findById(id).lean();
 
   if (!order) {
     return next(new AppError(`No order found with ID: ${id}`, 404));
@@ -174,7 +174,8 @@ export const getAllOrders = catchAsync(async (req, res, next) => {
     Order.find()
       .sort({ createdAt: -1 })//newst first
       .skip(skip)
-      .limit(limitNum),
+      .limit(limitNum)
+      .lean(),
     Order.countDocuments()
   ]);
 

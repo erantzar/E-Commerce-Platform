@@ -47,7 +47,7 @@ export const checkPermissions = async (req, res, next) => {
     next();
 }
 export const checkRole = async (req, res, next) => {
-    const user = await User.findById(req.user.userId).select("role");
+    const user = await User.findById(req.user.userId).select("role").lean();
     const { role } = user;
 
     if (role !== "admin") {
