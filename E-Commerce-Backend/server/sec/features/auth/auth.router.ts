@@ -1,4 +1,4 @@
-import express from 'express';
+import express,{Router} from 'express';
 import { 
   register, 
   login, 
@@ -29,7 +29,7 @@ const limiterLogIn = rateLimit({
   message: "יותר מידי בקשות, חכה 15 דקות"
 });
 
-const AuthRoutes = express.Router();
+const AuthRoutes:Router = express.Router();
 
 // הרשמה
 AuthRoutes.post('/register',validate(registerSchema), register);

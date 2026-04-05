@@ -9,19 +9,28 @@ import {
 } from "./mailer.messeges.js";
 
 dotenv.config()
+// const order = await Order.create({
+//   user: userId,
+//   items: resolvedItems,
+//   shippingAddress,
+//   paymentMethod,
+//   notes,
+//   totalprice: (totalPrice + shipingCost),
+// });
+
 
 const transporter = nodemailer.createTransport({
   service: "gmail", // אפשר גם SMTP אחר
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.EMAIL_USER!,
+    pass: process.env.EMAIL_PASS!,
   },
 });
 
 //when register
-async function sendVerificationEmail(to, verificationLink) {
+async function sendVerificationEmail(to:string, verificationLink:string) : Promise<void> {
   await transporter.sendMail({
-    from: `"Ecommerce" <${process.env.EMAIL_USER}>`,
+    from: `"Ecommerce" <${process.env.EMAIL_USER!}>`,
     to,
     subject: "Welcome! Please verify your email",
     text: `Welcome! Please verify your email by clicking this link: ${verificationLink}`,
@@ -30,9 +39,9 @@ async function sendVerificationEmail(to, verificationLink) {
 }
 
 
-async function sendResetPasswordEmail(to, resetLink) {
+async function sendResetPasswordEmail(to:string, resetLink:string):Promise<void> {
   await transporter.sendMail({
-    from: `"Ecommerce" <${process.env.EMAIL_USER}>`,
+    from: `"Ecommerce" <${process.env.EMAIL_USER!}>`,
     to,
     subject: "Reset Your Password",
     text: `Reset your password by clicking this link: ${resetLink}`,
@@ -41,9 +50,9 @@ async function sendResetPasswordEmail(to, resetLink) {
 }
 
 //send verification fo admins
-async function sendTwoFactorEmail(to, twoFactorCode) {
+async function sendTwoFactorEmail(to:string, twoFactorCode:string):Promise<void> {
   await transporter.sendMail({
-    from: `"Ecommerce" <${process.env.EMAIL_USER}>`,
+    from: `"Ecommerce" <${process.env.EMAIL_USER!}>`,
     to,
     subject: "Admin Login - Two Factor Authentication Code",
     text: `Your two factor authentication code is: ${twoFactorCode}`,
@@ -52,9 +61,12 @@ async function sendTwoFactorEmail(to, twoFactorCode) {
 }
 
 //send mail when order creates
-async function sendOrderEmail(order, to) {
+//order: any אין לי מוסג צריכה ליבדוק
+async function sendOrderEmail(order: any, to: string): Promise<void>{
+  console.log(order,"hahah");
+  
   await transporter.sendMail({
-    from: `"Ecommerce" <${process.env.EMAIL_USER}>`,
+    from: `"Ecommerce" <${process.env.EMAIL_USER!}>`,
     to,
     subject: `Order Confirmation #${order._id}`,
     html: sendOrderEmailHTML(order),
@@ -62,7 +74,7 @@ async function sendOrderEmail(order, to) {
 }
 
 //send mail when admin change order status
-async function sendOrderStatusEmail(to, orderId, orderStatus) {
+async function sendOrderStatusEmail(to: string, orderId: string, orderStatus: string): Promise<void> {
   await transporter.sendMail({
     from: `"Ecommerce" <${process.env.EMAIL_USER}>`,
     to,

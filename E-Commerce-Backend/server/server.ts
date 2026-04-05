@@ -1,4 +1,5 @@
-import express from "express";
+import express  from "express";
+import type { Request, Response, NextFunction } from "express";
 import connectDB from "./sec/config/db.js";
 import "dotenv/config"; 
 import router from './sec/features/users/user.router.js'// טוען משתני סביבה
@@ -47,7 +48,7 @@ app.use("/api/v1/products", ProductsRoutes);
 app.use("/api/v1/orders", OrderRoutes);
 app.use("/api/v1/cart",cartRoutes)
 
-app.use((_, res) => {
+app.use((req: Request, res: Response) => {
   console.log("404 - Not Found");
   res.status(404).json({ message: "Route not found" });
 });
@@ -56,7 +57,7 @@ app.use(globalErrorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-const start = async () => {
+const start = async () :Promise <void> => {
   try {
     await connectDB();
     console.log("DB connected");
@@ -66,7 +67,11 @@ const start = async () => {
     );
 
   } catch (error) {
-    console.error("Server failed to start:", error.message);
+    if (error instanceof Error) {
+      console.error("Server failed to start:", error.message);
+    } else {
+      console.error("Server failed to start:", error);
+    }
     process.exit(1);
   }
 };

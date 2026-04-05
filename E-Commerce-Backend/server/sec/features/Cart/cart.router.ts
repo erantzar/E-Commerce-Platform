@@ -1,9 +1,10 @@
 import express from 'express'
+import type { Router } from 'express'
 import { authMiddleware } from '../auth/auth.middleware.js'
 import { deleteCart ,deleteSingelItemCart ,getCart ,addItemsToCart ,updateSingleItemInCart, syncCart } from './cart.controller.js'
 import {validate } from '../../utils/validate.js'
 import {postCartSchema,syncCartSchema} from './cart.schemas.js'
-const cartRoutes = express.Router()
+const cartRoutes:Router = express.Router()
 
 cartRoutes.get('/',authMiddleware,getCart)
 

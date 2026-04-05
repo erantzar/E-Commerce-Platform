@@ -7,14 +7,14 @@ import {
     updateProduct,
     deleteProduct
 } from "./products.controller.js";
-import express from 'express';
+import express, { Router } from 'express';
 import { validate } from "../../../shared/middleware/validate.js";
 import { authMiddleware, checkRole } from "../auth/auth.middleware.js";
 import { createProductSchema, updateProductSchema, ratinigSchema } from "./products.schemas.js";
 import { uploadProductImage } from "../../config/cloudinary.js";
 
 
-const routerProduct = express.Router();
+const routerProduct:Router = express.Router();
 
 routerProduct.post('/', validate(createProductSchema) ,authMiddleware, checkRole, uploadProductImage.array('images', 4), createProduct);
 routerProduct.post('/:id/rating',validate(ratinigSchema),authMiddleware, addProductRating);

@@ -1,10 +1,11 @@
 import express from "express";
+import type { Router } from "express";
 import { authMiddleware,checkRole } from "../auth/auth.middleware.js";
 import * as userController from "./user.controller.js";
 import {validate } from '../../utils/validate.js'
 import {changePasswordSchema, idValidation, updateUserProfileinSchema}from './auth.schema.js'
 import { uploadUserAvatar } from "../../config/cloudinary.js";
-const router = express.Router();
+const router:Router = express.Router();
 
 /* =======================
    👤 USER (מאומת)
