@@ -1,0 +1,1 @@
+{"version":3,"file":"cors.config.d.ts","sourceRoot":"","sources":["../../../sec/config/cors.config.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,SAAS,CAAC;AACvC,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,MAAM,CAAC;AAOxC;;;GAGG;AACH,QAAA,MAAM,mBAAmB,GAAI,KAAK,OAAO,EAAE,UAAU,CAAC,GAAG,EAAE,KAAK,GAAG,IAAI,EAAE,OAAO,CAAC,EAAE,WAAW,KAAK,IAAI,SA4BtG,CAAC;AAEF,eAAe,mBAAmB,CAAC"}
