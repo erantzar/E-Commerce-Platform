@@ -40,7 +40,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const link = `http://localhost:3000/api/v1/AuthRoutes/verify-email/${rawToken}`;
     await sendVerificationEmail(email, link);
-
+    console.log("http://localhost:3000/api/v1/AuthRoutes/verify-email/",`${rawToken}`);
+    
     res.status(200).json({
       status: 200,
       message: "Verification code sent.",
@@ -181,6 +182,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     await user.save();
 
     const link = `http://localhost:3000/api/v1/AuthRoutes/reset-password/${rawToken}`;
+    console.log(rawToken);
     await sendResetPasswordEmail(email, link);
 
     res.status(200).json({
@@ -263,6 +265,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void |
  * @access  Admin
  */
 export const adminLogin = async (req: Request, res: Response): Promise<void> => {
+  console.log("הגיע");
   try {
     const { email, password } = req.body as { email: string; password: string };
 
@@ -303,11 +306,12 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
     await user.save();
 
     await sendTwoFactorEmail(email, twoFactorCode);
-
+    console.log("userId - " +user._id ,"twoFactorCode - "+twoFactorCode );
+    
     res.status(200).json({
       status: 200,
       message: "2FA code sent to admin email",
-      data: { userId: user._id },
+      data: { userId: user._id ,twoFactorCode:twoFactorCode },
     });
   } catch (error) {
     console.error(error);
