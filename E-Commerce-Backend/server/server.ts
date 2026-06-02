@@ -12,6 +12,8 @@ import helmet from 'helmet';
 import cors from 'cors'
 import corsOptions from "./sec/config/cors.config.js";
 import cartRoutes from "./sec/features/Cart/cart.router.js";
+import statsRoutes from './sec/features/stats/stats.router.js'
+
 
 const app = express();
 
@@ -46,7 +48,9 @@ app.use("/api/v1/users", router);
 app.use("/api/v1/AuthRoutes", AuthRoutes);
 app.use("/api/v1/products", ProductsRoutes);
 app.use("/api/v1/orders", OrderRoutes);
-app.use("/api/v1/cart",cartRoutes)
+app.use("/api/v1/cart",cartRoutes);
+app.use("/api/v1/stats", statsRoutes);
+
 
 app.use((req: Request, res: Response) => {
   console.log("404 - Not Found");

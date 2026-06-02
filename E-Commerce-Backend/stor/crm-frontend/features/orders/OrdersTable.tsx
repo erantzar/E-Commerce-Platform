@@ -22,28 +22,19 @@ export default function OrdersTable() {
   // 1. טעינת כל ההזמנות מהשרת
   const loadOrders = async () => {
     setLoading(true);
+    setMessage(null);
     try {
-      const res = await productService.getAllOrders();
-      
-      // לוג שיעזור לך לראות בדיוק מה חזר מהשרת בלשונית ה-Console
-      console.log("=== תשובה גולמית מהשרת של ההזמנות ===", res);
-  
-      if (Array.isArray(res)) {
-        setOrders(res);
-      } else if (res && Array.isArray(res.data)) {
-        // אם זה הגיע במבנה של { data: [...] }
-        setOrders(res.data);
-      } else if (res && Array.isArray(res.orders)) {
-        // אם זה הגיע במבנה של { orders: [...] }
-        setOrders(res.orders);
+      const res = await productService.getMyOrders();
+      setOrders(Array.isArray(res) ? res : []);
+    } catch (err: any) {
+      // אין הזמנות = 404 מהשרת — לא שגיאה למשתמש
+      if (err.response?.status === 404) {
+        setOrders([]);
       } else {
-        // במקרה חירום שהשרת שלח משהו מוזר, שלא יתרסק - שמי מערך ריק
+        console.error("Failed to load orders", err);
+        setMessage({ text: "שגיאה בטעינת רשימת ההזמנות מהשרת", isError: true });
         setOrders([]);
       }
-    } catch (err) {
-      console.error("Failed to load orders", err);
-      setMessage({ text: "שגיאה בטעינת רשימת ההזמנות מהשרת", isError: true });
-      setOrders([]); // הגנה מפני התרסקות
     } finally {
       setLoading(false);
     }
@@ -84,7 +75,7 @@ const filteredOrders = Array.isArray(orders)
 
   return (
     <div style={{ maxWidth: "800px", margin: "30px auto", padding: "20px", border: "1px solid #e2e8f0", borderRadius: "16px", backgroundColor: "#fff", direction: "rtl", fontFamily: "system-ui, sans-serif" }}>
-      
+      <button onClick={() => { window.location.href = "/"; }} style={{ padding: "8px 16px", background: "#3182ce", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>חזור לדף הבית</button>
       <h3 style={{ color: "#2d3748", marginBottom: "20px", borderBottom: "2px solid #edf2f7", paddingBottom: "8px" }}>ניהול ומעקב הזמנות במערכת</h3>
 
       {/* שורת חיפוש ארוכה */}

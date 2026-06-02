@@ -120,6 +120,7 @@ export default function UsersManagement() {
                   <td style={{ padding: "12px", textAlign: "left", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
                     
                     {/* כפתור שינוי תפקיד */}
+                    {user.role !== "admin" && (
                     <button
                       type="button"
                       onClick={() => handleToggleRole(user._id, user.role)}
@@ -128,7 +129,7 @@ export default function UsersManagement() {
                     >
                       {actionLoading === user._id ? "מעדכן..." : user.role === "admin" ? "הפוך לרגיל" : "הפוך לאדמין"}
                     </button>
-
+                    )}
                     {/* כפתור מחיקה */}
                     <button
                       type="button"

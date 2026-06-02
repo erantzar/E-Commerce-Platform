@@ -201,6 +201,9 @@ export const deleteCart = async (req: Request, res: Response): Promise<void> => 
  * @access  confirmed user
  */
 export const syncCart = async (req: Request, res: Response): Promise<void> => {
+  console.log("הגיע");
+  console.log(req.body);
+  
   try {
     const { id } = req.user!;
     const items = req.body.items as { product: Types.ObjectId; quantity?: number }[];
@@ -235,7 +238,9 @@ export const syncCart = async (req: Request, res: Response): Promise<void> => {
     }
 
     await user.save();
-
+    console.log("הסנכרון עם השרת בהצלחה");
+    console.log(user.cart);
+    
     res.status(200).json({
       status: 200,
       message: "Cart synced successfully",
@@ -243,8 +248,11 @@ export const syncCart = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     const err = error as Error;
-    res.status(400).json({
-      status: 400,
+    console.log("הסנכרון עם השרת נכשל");
+    console.log(err);
+    
+    res.status(500).json({
+      status: 500,
       message: err.message,
       data: null,
     });

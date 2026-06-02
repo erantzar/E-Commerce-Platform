@@ -1,10 +1,9 @@
-// app/dashboard/users/page.tsx
+import StoreMetricsDashboard from "@/features/dashboard/StoreMetricsDashboard";
 
-export default function UsersPage() {
-    return (
-      <div>
-        <h1>ניהול משתמשים</h1>
-        {/* התוכן של העמוד שלך */}
-      </div>
-    );
-  }
+export default function DashboardPage() {
+  return (
+    <main style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
+      <StoreMetricsDashboard />
+    </main>
+  );
+}

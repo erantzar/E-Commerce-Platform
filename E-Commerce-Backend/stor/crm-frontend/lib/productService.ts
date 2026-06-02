@@ -49,14 +49,26 @@ export const productService = {
     const response = await apiClient.post("/AuthRoutes/register", userData);
     return response.data;
   },
+    loginUser: async (credentials: any) => {
+      const response = await apiClient.post("/AuthRoutes/login", credentials);
+      
+      // הדפסה זמנית שתראה לך ב-Console של הדפדפן בדיוק מה חזר מהלוגין:
+      console.log("=== מה חזר מהשרת בזמן לוגין ===", response.data);
+    
+      // חילוץ בטוח: ננסה למצוא את הטוקן בכמה תצורות נפוצות
+      const token = response.data?.token || response.data?.data?.token || response.data?.data;
+    
+      // בדיקה: אם מצאנו מחרוזת של טוקן (והיא לא אובייקט)
+      if (token && typeof token === "string") {
+        localStorage.setItem("token", token); // שמירת הטוקן האמיתי
+        console.log(" Token נשמר בהצלחה ב-localStorage!");
+      } else {
+        console.warn("⚠️ השרת החזיר תשובה, אך לא הצלחנו לחלץ ממנה טוקן כסטרינג תקין.");
+      }
+    
+      return response.data;
+    },
 
-  loginUser: async (credentials: any) => {
-    const response = await apiClient.post("/AuthRoutes/login", credentials);
-    if (response.data?.data) {
-      localStorage.setItem("token", response.data.data); // שמירת הטוקן
-    }
-    return response.data;
-  },
 
   logoutUser: async (userId: string) => {
     const response = await apiClient.put("/AuthRoutes/logout", { id: userId });
@@ -131,6 +143,10 @@ export const productService = {
     const response = await apiClient.post("/cart/sync", guestCartItems);
     return response.data;
   },
+  getCart: async () => {
+    const response = await apiClient.get("/cart");
+    return response.data?.data ?? response.data ?? [];
+  },
 
   // ─── 📋 ניהול הזמנות (Orders) ───
   getAllOrders: async () => {
@@ -168,5 +184,13 @@ export const productService = {
     const response = await apiClient.post("/orders", orderData);
     console.log(response.data);
     return response.data;
+  },getProductById: async (id: string) => {
+    const response = await apiClient.get(`/products/${id}`);
+    return response.data?.data ?? response.data;
+  },
+  getMyOrders: async () => {
+    const response = await apiClient.get("/orders/my-orders");
+    const data = response.data?.data;
+    return Array.isArray(data) ? data : [];
   }
 };

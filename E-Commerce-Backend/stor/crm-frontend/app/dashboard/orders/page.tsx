@@ -40,29 +40,64 @@ export default function OrderForm() {
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
   // 3. שליפת פרופיל המשתמש בטעינת העמוד (useEffect)
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await apiClient.get("/users/profile");
-        const userData = response.data?.data;
-        
-        if (userData) {
-          setUserProfile(userData);
-          // בחירת הכתובת הראשונה כברירת מחדל אם קיימות כתובות
-          if (userData.addresses && userData.addresses.length > 0) {
-            setSelectedAddressId(userData.addresses[0]._id);
-          }
+// 3. שליפת פרופיל המשתמש והשלמת נתוני המוצרים בטעינת העמוד
+useEffect(() => {
+  const fetchUserProfile = async () => {
+    try {
+      const response = await apiClient.get("/users/profile");
+      const userData = response.data?.data;
+      
+      if (userData) {
+        // במידה והעגלה מכילה מוצרים, נשלוף עבור כל אחד את האובייקט המלא שלו
+        if (userData.cart && userData.cart.length > 0) {
+          console.log("🔍 נמצאו מוצרים בעגלה, משלים נתונים מהשרת...");
+          
+          const enrichedCart = await Promise.all(
+            userData.cart.map(async (item: any) => {
+              // בודקים אם המוצר הוא רק מחרוזת של ID (סטרינג)
+              const productId = typeof item.product === "string" ? item.product : item.product?._id;
+              
+              if (productId) {
+                try {
+                  // פנייה לראוט שביקשת: GET /products/{productId}
+                  const productResponse = await apiClient.get(`/products/${productId}`);
+                  
+                  // תלוי במבנה ה-JSON של השרת שלך (אם המוצר עטוף ב-data או מגיע ישירות)
+                  const fullProduct = productResponse.data?.data || productResponse.data;
+                  
+                  return {
+                    ...item,
+                    product: fullProduct // מחליפים את ה-ID באובייקט המוצר המלא מהשרת!
+                  };
+                } catch (prodErr) {
+                  console.error(`שגיאה בשליפת מוצר ${productId}:`, prodErr);
+                  return item; // במקרה של שגיאה נשמור על המידע הקיים
+                }
+              }
+              return item;
+            })
+          );
+          
+          userData.cart = enrichedCart;
         }
-      } catch (err: any) {
-        console.error("Failed to fetch profile", err);
-        setMessage({ text: "שגיאה בטעינת נתוני המשתמש והעגלה. ודא שאתה מחובר.", isError: true });
-      } finally {
-        setFetchingUser(false);
-      }
-    };
 
-    fetchUserProfile();
-  }, []);
+        setUserProfile(userData);
+
+        // בחירת הכתובת הראשונה כברירת מחדל
+        if (userData.addresses && userData.addresses.length > 0) {
+          setSelectedAddressId(userData.addresses[0]._id);
+        }
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch profile", err);
+      setMessage({ text: "שגיאה בטעינת נתוני המשתמש והעגלה. ודא שאתה מחובר.", isError: true });
+    } finally {
+      setFetchingUser(false);
+    }
+  };
+
+  fetchUserProfile();
+}, []);
 
   // 4. שליחת הטופס ויצירת ההזמנה בשרת
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,26 +164,65 @@ export default function OrderForm() {
       <form onSubmit={handleSubmit}>
         
         {/* ─── חלק א': טבלת מוצרים דינמית מתוך ה-cart של המשתמש ─── */}
-        <h3 style={{ borderBottom: "2px solid #edf2f7", paddingBottom: "8px", color: "#4a5568", marginBottom: "15px" }}>1. פריטים בעגלה שלך</h3>
+{/* ─── חלק א': טבלת מוצרים דינמית מתוך ה-cart של המשתמש ─── */}
+<h3 style={{ borderBottom: "2px solid #edf2f7", paddingBottom: "8px", color: "#4a5568", marginBottom: "15px" }}>1. פריטים בעגלה שלך</h3>
         
         {userProfile && userProfile.cart.length > 0 ? (
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "25px", textAlign: "right" }}>
             <thead>
               <tr style={{ backgroundColor: "#f7fafc", borderBottom: "2px solid #edf2f7" }}>
-                <th style={{ padding: "12px", color: "#718096" }}>מזהה מוצר</th>
+                <th style={{ padding: "12px", color: "#718096", width: "80px" }}>תמונה</th>
+                <th style={{ padding: "12px", color: "#718096" }}>שם המוצר</th>
                 <th style={{ padding: "12px", color: "#718096", textAlign: "center" }}>כמות</th>
+                <th style={{ padding: "12px", color: "#718096", textAlign: "left" }}>מחיר</th>
               </tr>
             </thead>
             <tbody>
-              {userProfile.cart.map((item) => (
-                <tr key={item._id} style={{ borderBottom: "1px solid #edf2f7" }}>
-                  {/* מציג את ה-ID (או השם במידה ועשיתם populate בשרת) */}
-                  <td style={{ padding: "12px", color: "#2d3748", fontFamily: "monospace" }}>
-                    {typeof item.product === "object" ? item.product.name : item.product}
-                  </td>
-                  <td style={{ padding: "12px", textAlign: "center", fontWeight: "600" }}>{item.quantity}</td>
-                </tr>
-              ))}
+              {userProfile.cart.map((item) => {
+                // חילוץ בטוח של פרטי המוצר מתוך ה-populate של השרת
+                const isObject = typeof item.product === "object" && item.product !== null;
+                const productName = isObject ? (item.product.name || item.product.title) : "מוצר כללי";
+                const productPrice = isObject ? item.product.price : 0;
+                const productImage = isObject ? (item.product.image || item.product.imageUrl || item.product.images?.[0]) : null;
+                const productId = isObject ? item.product._id : item.product;
+
+                return (
+                  <tr key={item._id || productId} style={{ borderBottom: "1px solid #edf2f7" }}>
+                    {/* עמודת תמונה */}
+                    <td style={{ padding: "12px" }}>
+                      {productImage ? (
+                        <img 
+                          src={productImage} 
+                          alt={productName} 
+                          style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "8px", border: "1px solid #e2e8f0" }} 
+                        />
+                      ) : (
+                        <div style={{ width: "50px", height: "50px", backgroundColor: "#edf2f7", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "#a0aec0" }}>
+                          📦
+                        </div>
+                      )}
+                    </td>
+
+                    {/* עמודת שם ו-ID */}
+                    <td style={{ padding: "12px", color: "#2d3748", fontWeight: "600" }}>
+                      {productName}
+                      <div style={{ fontSize: "11px", color: "#a0aec0", fontFamily: "monospace", marginTop: "2px" }}>
+                        ID: {productId}
+                      </div>
+                    </td>
+
+                    {/* עמודת כמות */}
+                    <td style={{ padding: "12px", textAlign: "center", fontWeight: "600", color: "#4a5568" }}>
+                      {item.quantity}
+                    </td>
+
+                    {/* עמודת מחיר כולל לשורה */}
+                    <td style={{ padding: "12px", textAlign: "left", color: "#2b6cb0", fontWeight: "700" }}>
+                      ₪{productPrice ? (productPrice * item.quantity).toLocaleString() : "0"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (

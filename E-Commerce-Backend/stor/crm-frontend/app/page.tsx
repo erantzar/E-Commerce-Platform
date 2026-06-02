@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { productService } from "@/lib/productService";
 import CartSidebar from "@/features/cart/CartSidebar";
-
+import { enrichCartItems } from "@/lib/cartUtils";
+import ProductCard from "@/features/products/ProductCard";
 export default function StoreHomePage() {
   const [products, setProducts] = useState<any[]>([]);
   const [cart, setCart] = useState<any[]>([]);
@@ -49,17 +50,26 @@ export default function StoreHomePage() {
         setProducts([]);
       }
 
-      // ב. בדיקה אם המשתמש מחובר (קיים טוקן)
-      const token = localStorage.getItem("token");
-      if (token) {
-        setIsLoggedIn(true);
-      }
+// ג. טעינת עגלה — לפי מצב התחברות
+const token = localStorage.getItem("token");
+const loggedIn = !!token;
+setIsLoggedIn(loggedIn);
 
-      // ג. טעינת העגלה מתוך ה-localStorage (תמיד טוענים מכאן!)
-      const localCart = localStorage.getItem("guest_cart");
-      if (localCart) {
-        setCart(JSON.parse(localCart));
-      }
+if (loggedIn) {
+  try {
+    const rawCart = await productService.getCart();
+    setCart(await enrichCartItems(rawCart));
+    setIsLoggedIn(true);
+  } catch (err) {
+    console.error("טעינת עגלה מהשרת נכשלה:", err);
+    setCart([]);
+  }
+} else {
+  const localCart = localStorage.getItem("guest_cart");
+  if (localCart) {
+    setCart(JSON.parse(localCart));
+  }
+}
     };
     initStore();
   }, []);
@@ -67,45 +77,66 @@ export default function StoreHomePage() {
   // ─── 🛒 ניהול העגלה הבלעדי ב-LocalStorage ───
 
   // 1. הוספה לעגלה
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = async (product: any) => {
+    if (isLoggedIn) {
+      try {
+        await productService.addToCart(product._id, 1);
+        const rawCart = await productService.getCart();
+        const enriched = await enrichCartItems(rawCart);
+        setCart(enriched);
+      } catch (err) {
+        console.error("הוספה לעגלה בשרת נכשלה", err);
+      }
+      return;
+    }
+  
+    // אורח — localStorage (הקוד הקיים)
     const updatedCart = [...cart];
     const existing = updatedCart.find(
-      (item) => (typeof item.product === "object" ? item.product._id : item.product) === product._id
+      (item) =>
+        (typeof item.product === "object" ? item.product._id : item.product) ===
+        product._id
     );
-
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      updatedCart.push({ product: product, quantity: 1 });
-    }
-
+    if (existing) existing.quantity += 1;
+    else updatedCart.push({ product, quantity: 1 });
     setCart(updatedCart);
     localStorage.setItem("guest_cart", JSON.stringify(updatedCart));
   };
 
   // 2. עדכון כמות פריט
-  const handleUpdateQty = (itemId: string, newQty: number) => {
-    const updatedCart = cart.map((item) => {
-      const id = typeof item.product === "object" ? item.product._id : item.product;
-      return id === itemId ? { ...item, quantity: newQty } : item;
-    });
-    
-    setCart(updatedCart);
-    localStorage.setItem("guest_cart", JSON.stringify(updatedCart));
+  const handleUpdateQty = async (productId: string, newQty: number) => {
+    if (newQty < 1) return;
+  
+    if (isLoggedIn) {
+      try {
+        await productService.updateCartItem(productId, newQty);
+        const rawCart = await productService.getCart();
+        setCart(await enrichCartItems(rawCart));
+      } catch (err) {
+        console.error(err);
+      }
+      return;
+    }
+  
+    // אורח — הקוד הקיים + localStorage
   };
 
   // 3. מחיקת פריט בודד
-  const handleRemoveItem = (itemId: string) => {
-    const updatedCart = cart.filter(
-      (item) => (typeof item.product === "object" ? item.product._id : item.product) !== itemId
-    );
-    
-    setCart(updatedCart);
-    localStorage.setItem("guest_cart", JSON.stringify(updatedCart));
+  const handleRemoveItem = async (productId: string) => {
+    if (isLoggedIn) {
+      await productService.deleteCartItem(productId);
+      const rawCart = await productService.getCart();
+      setCart(await enrichCartItems(rawCart));
+      return;
+    }
+    // אורח — filter + localStorage ריקון עגלה
   };
-
-  // 4. רוקן עגלה
-  const handleClearCart = () => {
+  const handleClearCart = async () => {
+    if (isLoggedIn) {
+      await productService.clearCart();
+      setCart([]);
+      return;
+    }
     setCart([]);
     localStorage.removeItem("guest_cart");
   };
@@ -117,54 +148,59 @@ export default function StoreHomePage() {
       window.location.href = "/dashboard/orders";
     } else {
       // לא מחובר? פתחי מודאל והגבילי אותו
-      setAuthMessage("כדי להשלים את ההזמנה ולבצע תשלום, יש להתחבר או להירשם תחילה.");
-      setAuthMode("login");
+      window.location.href = "/login";
     }
   };
 
-  // ─── 🔐 התחברות וסנכרון עגלה (Sync) ───
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthMessage("");
-    try {
-      await productService.loginUser({ email, password });
-      setIsLoggedIn(true);
-      setAuthMode(null);
+// ─── 🔐 התחברות וסנכרון עגלה (Sync) ───
+const handleLoginSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setAuthMessage("");
+  try {
+    // 1. ביצוע התחברות
+    await productService.loginUser({ email, password });
+    setIsLoggedIn(true);
+    setAuthMode(null);
 
-      // ברגע שהתחבר - אם יש מוצרים בעגלה המקומית, נסנכרן אותם ל-DB של השרת
-      const localCart = localStorage.getItem("guest_cart");
-      if (localCart) {
-        const guestItems = JSON.parse(localCart).map((item: any) => ({
-          product: typeof item.product === "object" ? item.product._id : item.product,
-          quantity: item.quantity
-        }));
-        
-        if (guestItems.length > 0) {
-          try {
-            await productService.syncCart(guestItems);
-            console.log("העגלה המקומית סונכרנה עם השרת בהצלחה!");
-          } catch (syncErr) {
-            console.error("סנכרון העגלה מול השרת נכשל", syncErr);
-          }
+    // 2. שליפת העגלה המקומית מהדפדפן
+    const localCart = localStorage.getItem("guest_cart");
+    if (localCart) {
+      const guestItems = JSON.parse(localCart).map((item: any) => ({
+        product: typeof item.product === "object" ? item.product._id : item.product,
+        quantity: item.quantity
+      }));
+      
+      if (guestItems.length > 0) {
+        try {
+          // סנכרון מול השרת
+          await productService.syncCart(guestItems);
+          console.log("העגלה המקומית סונכרנה עם השרת בהצלחה!");
+        } catch (syncErr) {
+          console.error("סנכרון העגלה מול השרת נכשל", syncErr);
         }
       }
-
-      // מעבר אוטומטי לעמוד התשלום מכיוון שהוא רצה לבצע checkout
-      window.location.href = "/checkout";
-
-    } catch (err: any) {
-      setAuthMessage(err.response?.data?.message || "פרטי התחברות שגויים, נסה שנית.");
     }
-  };
+
+    // 🔥 הקסם החדש: במקום להעביר עמוד, אנחנו מרעננים קלות את דף הבית
+    // כדי שה-useEffect של טעינת העמוד ירוץ מחדש, יזהה שהמשתמש מחובר,
+    // ימשוך את העגלה המלאה מהשרת ויציג אותה מיד בעגלה בצד שמאל!
+    console.log("🔄 מתחבר ומעדכן את העגלה על המסך...");
+    window.location.reload();
+
+  } catch (err: any) {
+    setAuthMessage(err.response?.data?.message || "פרטי התחברות שגויים, נסה שנית.");
+  }
+};
 
   const handleLogout = async () => {
     try {
       await productService.logoutUser("");
     } catch (err) {
       console.log("התנתקות מקומית");
-    } finally {
+    }finally {
       setIsLoggedIn(false);
-      handleClearCart(); // מנקים את העגלה בזמן התנתקות
+      setCart([]);                    // רק UI — לא למחוק עגלה בשרת
+      localStorage.removeItem("guest_cart");
     }
   };
 
@@ -181,7 +217,7 @@ export default function StoreHomePage() {
             </>
           ) : (
             <>
-              <button onClick={() => { setAuthMode("login"); setAuthMessage(""); }} style={{ padding: "8px 16px", background: "#3182ce", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>התחברות</button>
+              <button onClick={() => {  window.location.href = "/login"; }} style={{ padding: "8px 16px", background: "#3182ce", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>התחברות</button>
               {/* <button onClick={() => { setAuthMode("register"); setAuthMessage(""); }} style={{ padding: "8px 16px", background: "#48bb78", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>הרשמה</button> */}
               <button onClick={() => { window.location.href = "/register"; }} style={{ padding: "8px 16px", background: "#48bb78", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>הרשמה1</button>
             </>
@@ -203,23 +239,17 @@ export default function StoreHomePage() {
         <div>
           <h3 style={{ marginBottom: "20px", color: "#2d3748" }}>🏷️ המוצרים המומלצים שלנו</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
-            {Array.isArray(products) && products.length > 0 ? (
-              products.map((prod) => (
-                <div key={prod._id} style={{ border: "1px solid #e2e8f0", borderRadius: "12px", padding: "15px", backgroundColor: "#fff", display: "flex", flexDirection: "column", justifyContent: "space-between", boxShadow: "0 2px 4px rgba(0,0,0,0.02)" }}>
-                  <div style={{ height: "140px", backgroundColor: "#edf2f7", borderRadius: "8px", marginBottom: "12px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "45px" }}>📦</div>
-                  <div>
-                    <h4 style={{ margin: "0 0 6px 0", color: "#2d3748" }}>{prod.name}</h4>
-                    <p style={{ color: "#718096", fontSize: "13px", margin: "0 0 12px 0", height: "36px", overflow: "hidden" }}>{prod.description || "אין תיאור זמין עבור מוצר זה"}</p>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px" }}>
-                    <span style={{ fontWeight: "bold", color: "#2b6cb0", fontSize: "16px" }}>{prod.price} ₪</span>
-                    <button onClick={() => handleAddToCart(prod)} style={{ padding: "8px 14px", background: "#3182ce", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}>הוסף לעגלה</button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p style={{ color: "#718096" }}>טוען מוצרים או שלא נמצאו מוצרים בחנות...</p>
-            )}
+          {Array.isArray(products) && products.length > 0 ? (
+  products.map((prod) => (
+    <ProductCard
+      key={prod._id}
+      product={prod}
+      onAddToCart={handleAddToCart}
+    />
+  ))
+) : (
+  <p style={{ color: "#718096" }}>טוען מוצרים או שלא נמצאו מוצרים בחנות...</p>
+)}
           </div>
         </div>
 

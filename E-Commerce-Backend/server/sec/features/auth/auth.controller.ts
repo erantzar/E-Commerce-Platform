@@ -109,6 +109,8 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void | R
  * @access  confirmed user
  */
 export const login = async (req: Request, res: Response): Promise<void> => {
+  console.log("הגיע");
+  console.log(req.body);
   try {
     const { email, password } = req.body as { email: string; password: string };
 
@@ -181,7 +183,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     user.resetPasswordExpiry = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
     await user.save();
 
-    const link = `http://localhost:3000/api/v1/AuthRoutes/reset-password/${rawToken}`;
+     const link = `http://localhost:3001/password-reset/${rawToken}`;
     console.log(rawToken);
     await sendResetPasswordEmail(email, link);
 

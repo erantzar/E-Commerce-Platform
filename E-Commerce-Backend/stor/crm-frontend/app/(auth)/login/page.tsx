@@ -22,7 +22,7 @@ export default function LoginPage() {
 
     if (loginUser.fulfilled.match(resultAction)) {
       toast.success("התחברת בהצלחה! ברוך הבא.");
-      router.push("/dashboard"); // או עמוד הבית של החנות
+      router.push("/"); // או עמוד הבית של החנות
     } else {
       const errorMessage = resultAction.payload as string || "ההתחברות נכשלה. בדוק את הפרטים או אמת את המייל.";
       toast.error(errorMessage);
@@ -78,6 +78,8 @@ export default function LoginPage() {
           </div>
           <button onClick={() => { window.location.href = "/"; }} style={{ padding: "8px 16px", background: "#48bb78", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>חזור לדף הבית</button>
           <button onClick={() => { window.location.href = "/register"; }} style={{ padding: "8px 16px", background: "#48bb78", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>הרשמה</button>
+          <button onClick={() => { window.location.href = "/forgot-password"; }} style={{ padding: "8px 16px", background: "#48bb78", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer" }}>שכחת סיסמה?</button>
+
         </form>
       </div>
     </div>

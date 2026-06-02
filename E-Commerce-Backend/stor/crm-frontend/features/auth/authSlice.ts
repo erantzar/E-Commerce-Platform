@@ -24,9 +24,50 @@ export const loginUser = createAsyncThunk(
         email: userData.email,
         password: userData.password
       });
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+
+      const token = response.data?.data; 
+
+      if (token && typeof token === "string") {
+        localStorage.setItem("token", token);
+        console.log("🎉 הטוקן חולץ בהצלחה ונשמר ב-localStorage!");
+
+        // 🚨 🛒 ─── התיקון החדש עבור סנכרון העגלה ───
+        if (typeof window !== "undefined") {
+          const localCart = localStorage.getItem("guest_cart");
+
+          if (localCart) {
+            try {
+              const parsedCart = JSON.parse(localCart);
+
+              // חילוץ נקי של המזהים והכמויות
+              const formattedItems = parsedCart.map((item: any) => {
+                const productId = typeof item.product === "object" ? item.product?._id : item.product;
+                return {
+                  product: productId,
+                  quantity: Number(item.quantity)
+                };
+              });
+
+              if (formattedItems.length > 0) {
+                console.log("🔄 שולח עגלה עטופה במבנה אובייקט לשרת...", { items: formattedItems });
+                
+                // 💡 שינוי קריטי: עוטפים את המערך בתוך אובייקט עם שדה items כמו שהשרת בדרך כלל דורש ב-Validation
+                await apiClient.post("/cart/sync", { items: formattedItems });
+                
+                console.log("✅ העגלה המקומית סונכרנה בהצלחה בשרת!");
+                localStorage.removeItem("guest_cart");
+              }
+            } catch (syncError) {
+              console.error("❌ תקלה בסנכרון העגלה:", syncError);
+            }
+          }
+        }
+        // ─────────────────────────────────────
+
+      } else {
+        console.warn("⚠️ השרת לא החזיר טוקן במבנה הצפוי:", response.data);
       }
+
       return response.data;
     } catch (error: any) {
       const message = error.response?.data?.message || "פרטי התחברות שגויים";
